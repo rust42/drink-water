@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: drinkwater-ingress
+  namespace: drinkwater
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /api/devices
+            pathType: Prefix
+            backend:
+              service:
+                name: device-service
+                port:
+                  number: 8081
+          - path: /api/push-notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: push-service
+                port:
+                  number: 8082
+          - path: /api/water
+            pathType: Prefix
+            backend:
+              service:
+                name: water-service
+                port:
+                  number: 8083
+          - path: /actuator/health
+            pathType: Prefix
+            backend:
+              service:
+                name: device-service
+                port:
+                  number: 8081
+---
+# Alternative: Single LoadBalancer service on port 80 with path-based routing (if Ingress not available)
+apiVersion: v1
+kind: Service
+metadata:
+  name: drinkwater-gateway
+  namespace: drinkwater
+spec:
+  type: LoadBalancer
+  selector:
+    app: device-service  # This won't work for multiple services, need Ingress or proxy
+  ports:
+    - port: 80
+      targetPort: 8081

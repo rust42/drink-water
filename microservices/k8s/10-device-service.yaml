@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-service
+  namespace: drinkwater
+  labels:
+    app: device-service
+    app.kubernetes.io/name: device-service
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: device-service
+  template:
+    metadata:
+      labels:
+        app: device-service
+        app.kubernetes.io/name: device-service
+    spec:
+      containers:
+        - name: device-service
+          image: drinkwater/device-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: SERVER_PORT
+              value: "8081"
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: DEVICE_DB_URL
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: device-service
+  namespace: drinkwater
+  labels:
+    app: device-service
+spec:
+  selector:
+    app: device-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: http
+  type: ClusterIP

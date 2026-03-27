@@ -1,0 +1,44 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME:water-service}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:waterdb;DB_CLOSE_DELAY=-1}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:create-drop}
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: ${SPRING_JPA_FORMAT_SQL:true}
+  h2:
+    console:
+      enabled: ${SPRING_H2_CONSOLE_ENABLED:true}
+
+# Device Service Configuration
+device:
+  service:
+    url: ${DEVICE_SERVICE_URL:http://localhost:8081}
+
+# Push Service Configuration  
+push:
+  service:
+    url: ${PUSH_SERVICE_URL:http://localhost:8082}
+
+logging:
+  level:
+    com.example.drinkwater: ${LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER:DEBUG}
+    org.springframework.cloud.openfeign: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CLOUD_OPENFEIGN:DEBUG}
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:true}
