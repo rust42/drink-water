@@ -1,6 +1,45 @@
 version: '3.8'
 
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - drinkwater-network
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - drinkwater-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   device-service:
     build:
       context: .
@@ -14,9 +53,13 @@ services:
       - SERVER_PORT=8081
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:device-db;DB_CLOSE_DELAY=-1
       - SPRING_H2_CONSOLE_ENABLED=true
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER=INFO
     networks:
       - drinkwater-network
+    depends_on:
+      kafka:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
       interval: 30s
@@ -37,6 +80,7 @@ services:
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:push-db;DB_CLOSE_DELAY=-1
       - DEVICE_SERVICE_URL=http://device-service:8081
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - PUSH_APNS_TOPIC=com.sk.drink-water
       - PUSH_APNS_CERT_PATH=/app/certs/PushNotification.p12
       - PUSH_APNS_CERT_PASSWORD=${APNS_CERT_PASSWORD:-sandycorolla}
@@ -44,12 +88,13 @@ services:
       - PUSH_APNS_TOKEN_ENABLED=false
       - LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER=INFO
     volumes:
-      # Mount APNS certificate from host (update path as needed)
       - ${APNS_CERT_PATH:-/Users/sandeep/Documents/CSR/PushNotification.p12}:/app/certs/PushNotification.p12:ro
     networks:
       - drinkwater-network
     depends_on:
       device-service:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
@@ -72,6 +117,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:water-db;DB_CLOSE_DELAY=-1
       - DEVICE_SERVICE_URL=http://device-service:8081
       - PUSH_SERVICE_URL=http://push-service:8082
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER=INFO
     networks:
       - drinkwater-network
@@ -79,6 +125,8 @@ services:
       device-service:
         condition: service_healthy
       push-service:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]

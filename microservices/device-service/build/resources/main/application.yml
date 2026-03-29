@@ -1,11 +1,11 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
     name: device-service
   datasource:
-    url: jdbc:h2:mem:devicedb
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:devicedb}
     driver-class-name: org.h2.Driver
     username: sa
     password: password
@@ -19,11 +19,21 @@ spring:
   h2:
     console:
       enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    topic:
+      device-registered: device-registered
 
 logging:
   level:
     com.example.drinkwater: DEBUG
     org.springframework.cloud.openfeign: DEBUG
+    org.springframework.kafka: DEBUG
 
 eureka:
   client:

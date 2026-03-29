@@ -43,6 +43,7 @@ subprojects {
         add("implementation", "org.springframework.boot:spring-boot-starter-data-jpa")
         add("implementation", "org.springframework.boot:spring-boot-starter-validation")
         add("implementation", "org.springframework.boot:spring-boot-starter-actuator")
+        add("implementation", "org.springframework.kafka:spring-kafka")
         add("implementation", "org.springframework.cloud:spring-cloud-starter-openfeign")
         add("implementation", "org.jetbrains.kotlin:kotlin-reflect")
         add("implementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8")

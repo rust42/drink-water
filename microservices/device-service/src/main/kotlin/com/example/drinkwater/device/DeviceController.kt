@@ -1,5 +1,6 @@
 package com.example.drinkwater.device
 
+import com.example.drinkwater.device.service.DeviceEventProducer
 import com.example.drinkwater.device.service.DeviceService
 import com.example.drinkwater.dto.DeviceRegistrationRequest
 import com.example.drinkwater.dto.DeviceRegistrationResponse
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/devices")
 class DeviceController(
     private val deviceService: DeviceService,
+    private val deviceEventProducer: DeviceEventProducer
 ) {
     @PostMapping("/register")
     fun registerDevice(
@@ -19,6 +21,8 @@ class DeviceController(
     ): ResponseEntity<Any> {
         return try {
             val response = deviceService.registerDevice(request)
+            // Publish event to Kafka for async processing
+            deviceEventProducer.publishDeviceRegisteredEvent(response)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST)

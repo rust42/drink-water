@@ -2,6 +2,7 @@ package com.example.drinkwater.water
 
 import com.example.drinkwater.water.dto.WaterIntakeRequest
 import com.example.drinkwater.water.dto.WaterIntakeResponse
+import com.example.drinkwater.water.service.WaterEventProducer
 import com.example.drinkwater.water.service.WaterService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/water")
 class WaterController(
     private val waterService: WaterService,
+    private val waterEventProducer: WaterEventProducer
 ) {
     @PostMapping("/intake")
     fun recordWaterIntake(
@@ -19,6 +21,8 @@ class WaterController(
     ): ResponseEntity<WaterIntakeResponse> {
         return try {
             val response = waterService.recordWaterIntake(request)
+            // Publish event to Kafka for async processing
+            waterEventProducer.publishWaterIntakeRecordedEvent(request.deviceIdentifier, response)
             ResponseEntity.status(HttpStatus.CREATED).body(response)
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -63,17 +67,19 @@ class WaterController(
         @PathVariable deviceIdentifier: String,
     ): ResponseEntity<Map<String, Any>> {
         return try {
-            val result = waterService.sendHydrationReminder(deviceIdentifier)
+            // Publish event to Kafka instead of direct call
+            waterEventProducer.publishHydrationReminderRequest(deviceIdentifier)
             ResponseEntity.ok(
                 mapOf(
                     "deviceIdentifier" to deviceIdentifier,
-                    "reminderSent" to result,
+                    "reminderQueued" to true,
+                    "message" to "Hydration reminder request queued for processing",
                     "timestamp" to System.currentTimeMillis(),
                 ),
             )
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Failed to send reminder: ${e.message}"))
+                .body(mapOf("error" to "Failed to queue reminder: ${e.message}"))
         }
     }
 }

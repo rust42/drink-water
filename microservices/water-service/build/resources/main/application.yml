@@ -1,11 +1,11 @@
 server:
-  port: 8083
+  port: ${SERVER_PORT:8083}
 
 spring:
   application:
     name: water-service
   datasource:
-    url: jdbc:h2:mem:waterdb
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:waterdb}
     driver-class-name: org.h2.Driver
     username: sa
     password: password
@@ -19,21 +19,32 @@ spring:
   h2:
     console:
       enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    topic:
+      water-intake-recorded: water-intake-recorded
+      hydration-reminder: hydration-reminder
 
 # Device Service Configuration
 device:
   service:
-    url: http://localhost:8081
+    url: ${DEVICE_SERVICE_URL:http://localhost:8081}
 
 # Push Service Configuration  
 push:
   service:
-    url: http://localhost:8082
+    url: ${PUSH_SERVICE_URL:http://localhost:8082}
 
 logging:
   level:
     com.example.drinkwater: DEBUG
     org.springframework.cloud.openfeign: DEBUG
+    org.springframework.kafka: DEBUG
 
 eureka:
   client:

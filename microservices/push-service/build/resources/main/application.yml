@@ -1,11 +1,11 @@
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 spring:
   application:
     name: push-service
   datasource:
-    url: jdbc:h2:mem:pushdb
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:pushdb}
     driver-class-name: org.h2.Driver
     username: sa
     password: password
@@ -19,32 +19,50 @@ spring:
   h2:
     console:
       enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: push-notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.drinkwater.*
+        spring.json.type.mapping: |
+          device-registered:com.example.drinkwater.shared.event.DeviceRegisteredEvent
+          water-intake-recorded:com.example.drinkwater.shared.event.WaterIntakeRecordedEvent
+          hydration-reminder-request:com.example.drinkwater.shared.event.HydrationReminderRequestEvent
+    topic:
+      device-registered: device-registered
+      water-intake-recorded: water-intake-recorded
+      hydration-reminder: hydration-reminder
 
 # APNS Configuration - Certificate based (existing)
 push:
   apns:
     cert:
-      path: /Users/sandeep/Documents/CSR/PushNotification.p12
-      password: sandycorolla
+      path: ${PUSH_APNS_CERT_PATH:/Users/sandeep/Documents/CSR/PushNotification.p12}
+      password: ${PUSH_APNS_CERT_PASSWORD:sandycorolla}
     # Token-based auth (p8 file) - alternative to certificate
     token:
-      enabled: false
-    topic: com.sk.drink-water
+      enabled: ${PUSH_APNS_TOKEN_ENABLED:false}
+    topic: ${PUSH_APNS_TOPIC:com.sk.drink-water}
     sandbox:
-      url: https://api.sandbox.push.apple.com/3/device
-      enabled: true
+      url: ${PUSH_APNS_SANDBOX_URL:https://api.sandbox.push.apple.com/3/device}
+      enabled: ${PUSH_APNS_SANDBOX_ENABLED:true}
     production:
-      url: https://api.push.apple.com/3/device
+      url: ${PUSH_APNS_PRODUCTION_URL:https://api.push.apple.com/3/device}
 
 # Device Service Configuration
 device:
   service:
-    url: http://localhost:8081
+    url: ${DEVICE_SERVICE_URL:http://localhost:8081}
 
 logging:
   level:
     com.example.drinkwater: DEBUG
     org.springframework.cloud.openfeign: DEBUG
+    org.springframework.kafka: DEBUG
 
 eureka:
   client:

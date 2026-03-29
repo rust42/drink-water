@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drinkwater-config
+  namespace: drinkwater
+data:
+  # Database URLs
+  DEVICE_DB_URL: "jdbc:h2:mem:device-db"
+  WATER_DB_URL: "jdbc:h2:mem:water-db"
+  PUSH_DB_URL: "jdbc:h2:mem:push-db"
+  
+  # Service URLs
+  DEVICE_SERVICE_URL: "http://device-service:8081"
+  PUSH_SERVICE_URL: "http://push-service:8082"
+  WATER_SERVICE_URL: "http://water-service:8083"
+  
+  # Spring profiles
+  SPRING_PROFILES_ACTIVE: "kubernetes"
+  LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER: "DEBUG"
+  
+  # APNS Configuration
+  PUSH_APNS_TOPIC: "com.sk.drink-water"
+  PUSH_APNS_SANDBOX_ENABLED: "true"
+  PUSH_APNS_TOKEN_ENABLED: "false"
