@@ -1,0 +1,60 @@
+{{- if .Values.gateway.enabled }}
+╔════════════════════════════════════════════════════════════════╗
+║  🚀 Single Port Access (Recommended)                          ║
+╠════════════════════════════════════════════════════════════════╣
+║  All APIs available on localhost:30080                          ║
+╚════════════════════════════════════════════════════════════════╝
+
+1. Access all services on single port:
+   Device Service:   http://localhost:30080/api/devices/*
+   Push Service:     http://localhost:30080/api/push-notifications/*
+   Water Service:    http://localhost:30080/api/water/*
+
+2. Test the API:
+   # Register device
+   curl -X POST http://localhost:30080/api/devices/register \
+     -H "Content-Type: application/json" \
+     -d '{"deviceIdentifier":"test","pushToken":"token","storeId":"s1"}'
+
+   # Record water intake
+   curl -X POST http://localhost:30080/api/water/intake \
+     -H "Content-Type: application/json" \
+     -d '{"deviceIdentifier":"test","amount":250}'
+
+   # Send reminder
+   curl -X POST http://localhost:30080/api/water/reminder/test
+
+3. Alternative: Individual port forwarding
+   kubectl port-forward -n {{ .Release.Namespace }} svc/device-service 8081:8081 &
+   kubectl port-forward -n {{ .Release.Namespace }} svc/push-service 8082:8082 &
+   kubectl port-forward -n {{ .Release.Namespace }} svc/water-service 8083:8083 &
+
+{{- else }}
+1. Access services via port-forward:
+   kubectl port-forward -n {{ .Release.Namespace }} svc/device-service 8081:8081 &
+   kubectl port-forward -n {{ .Release.Namespace }} svc/push-service 8082:8082 &
+   kubectl port-forward -n {{ .Release.Namespace }} svc/water-service 8083:8083 &
+
+2. Test the API:
+   curl -X POST http://localhost:8081/api/devices/register \
+     -H "Content-Type: application/json" \
+     -d '{"deviceIdentifier":"test","pushToken":"token","storeId":"s1"}'
+{{- end }}
+
+4. Check pod status:
+   kubectl get pods --namespace {{ .Release.Namespace }}
+
+5. View logs:
+   kubectl logs -f -n {{ .Release.Namespace }} deployment/device-service
+   kubectl logs -f -n {{ .Release.Namespace }} deployment/push-service
+   kubectl logs -f -n {{ .Release.Namespace }} deployment/water-service
+
+{{- if .Values.kafka.enabled }}
+6. Kafka is enabled:
+   kubectl logs -f -n {{ .Release.Namespace }} statefulset/kafka
+   
+{{- if .Values.kafkaUi.enabled }}
+7. Kafka UI available at: http://localhost:{{ .Values.kafkaUi.service.nodePort }}
+   Browse topics and messages at: http://localhost:{{ .Values.kafkaUi.service.nodePort }}
+{{- end }}
+{{- end }}

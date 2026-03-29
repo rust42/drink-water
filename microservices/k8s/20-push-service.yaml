@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
         - name: push-service
-          image: drinkwater/push-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          image: drinkwater/push-service:1.0.1
+          imagePullPolicy: Never
           ports:
             - containerPort: 8082
               name: http

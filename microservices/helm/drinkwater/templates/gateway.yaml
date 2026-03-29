@@ -1,0 +1,104 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        server {
+            listen 80;
+            server_name localhost;
+
+            # Device Service
+            location /api/devices {
+                proxy_pass {{ .Values.services.device.url }};
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            # Push Service
+            location /api/push-notifications {
+                proxy_pass {{ .Values.services.push.url }};
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            # Water Service
+            location /api/water {
+                proxy_pass {{ .Values.services.water.url }};
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            # Health checks
+            location /actuator/health {
+                proxy_pass {{ .Values.services.device.url }}/actuator/health;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.gateway.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.gateway.name }}
+spec:
+  replicas: {{ .Values.gateway.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.gateway.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.gateway.name }}
+        {{- include "drinkwater.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: nginx
+          image: {{ .Values.gateway.image }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx
+              readOnly: true
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.gateway.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.gateway.name }}
+spec:
+  type: {{ .Values.gateway.service.type }}
+  selector:
+    app: {{ .Values.gateway.name }}
+  ports:
+    - port: {{ .Values.gateway.service.port }}
+      targetPort: 80
+      {{- if eq .Values.gateway.service.type "NodePort" }}
+      nodePort: {{ .Values.gateway.service.nodePort }}
+      {{- end }}
+      name: http
+{{- end }}

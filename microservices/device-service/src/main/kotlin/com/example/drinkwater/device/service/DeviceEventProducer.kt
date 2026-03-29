@@ -23,6 +23,9 @@ class DeviceEventProducer(
      * Publish a device registered event to Kafka
      */
     fun publishDeviceRegisteredEvent(device: DeviceRegistrationResponse) {
+        logger.info("[KAFKA PRODUCER] Publishing device registered event for device: ${device.deviceIdentifier}")
+        logger.debug("[KAFKA PRODUCER] Device details: id=${device.id}, deviceIdentifier=${device.deviceIdentifier}, pushToken=${device.pushToken.take(10)}..., storeId=${device.storeId}, platform=${device.platform}")
+        
         val event = DeviceRegisteredEvent(
             deviceIdentifier = device.deviceIdentifier,
             pushToken = device.pushToken,
@@ -32,15 +35,15 @@ class DeviceEventProducer(
             osVersion = device.osVersion ?: "Unknown",
             appVersion = device.appVersion ?: "Unknown"
         )
-
-        logger.info("Publishing device registered event for device: ${device.deviceIdentifier}")
+        
+        logger.info("[KAFKA PRODUCER] Sending to topic: $deviceRegisteredTopic, key: ${device.deviceIdentifier}")
 
         kafkaTemplate.send(deviceRegisteredTopic, device.deviceIdentifier, event)
             .whenComplete { result, ex ->
                 if (ex == null) {
-                    logger.info("Device registered event published successfully: ${result?.recordMetadata?.offset()}")
+                    logger.info("[KAFKA PRODUCER SUCCESS] Device registered event published successfully: offset=${result?.recordMetadata?.offset()}, partition=${result?.recordMetadata?.partition()}")
                 } else {
-                    logger.error("Failed to publish device registered event", ex)
+                    logger.error("[KAFKA PRODUCER ERROR] Failed to publish device registered event", ex)
                 }
             }
     }

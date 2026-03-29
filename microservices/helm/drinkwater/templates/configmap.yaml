@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drinkwater-config
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+data:
+  # Database URLs
+  DEVICE_DB_URL: {{ .Values.deviceService.dbUrl | quote }}
+  WATER_DB_URL: {{ .Values.waterService.dbUrl | quote }}
+  PUSH_DB_URL: {{ .Values.pushService.dbUrl | quote }}
+  
+  # Service URLs
+  DEVICE_SERVICE_URL: {{ .Values.services.device.url | quote }}
+  PUSH_SERVICE_URL: {{ .Values.services.push.url | quote }}
+  WATER_SERVICE_URL: {{ .Values.services.water.url | quote }}
+  
+  # Spring profiles
+  SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
+  LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER: {{ .Values.config.loggingLevel | quote }}
+  
+  # APNS Configuration
+  PUSH_APNS_TOPIC: {{ .Values.pushService.apns.topic | quote }}
+  PUSH_APNS_SANDBOX_ENABLED: {{ .Values.pushService.apns.sandboxEnabled | quote }}
+  PUSH_APNS_TOKEN_ENABLED: {{ .Values.pushService.apns.tokenEnabled | quote }}

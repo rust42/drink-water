@@ -26,17 +26,23 @@ class PushNotificationService(
 
     @Value("\${push.apns.token.enabled:false}")
     private var tokenAuthEnabled: Boolean = false
+    
+    @Value("\${push.apns.sandbox.url:https://api.sandbox.push.apple.com/3/device}")
+    private lateinit var apnsUrl: String
 
     fun sendPushToDevice(
         deviceIdentifier: String,
         pushToken: String,
         notification: PushNotificationRequest,
     ): PushNotificationResult {
+        logger.info("[SERVICE] sendPushToDevice called with deviceIdentifier=$deviceIdentifier")
+        logger.debug("[SERVICE PARAMS] pushToken=${pushToken.take(10)}..., notification title=${notification.title}, body=${notification.body}")
+        
         // Use token-based client if enabled, otherwise fall back to certificate-based
         val client = if (tokenAuthEnabled && apnsTokenClient != null) apnsTokenClient else apnsClient
 
         if (client == null) {
-            logger.warn("No APNS client available (neither token-based nor certificate-based)")
+            logger.warn("[SERVICE ERROR] No APNS client available (neither token-based nor certificate-based)")
             return PushNotificationResult(
                 deviceIdentifier = deviceIdentifier,
                 success = false,
@@ -50,16 +56,22 @@ class PushNotificationService(
             } else {
                 "certificate-based (p12)"
             }
-        logger.info("Using $authMethod authentication for APNS")
+        logger.info("[APNS CONFIG] Using $authMethod authentication for APNS")
+        logger.info("[APNS CONFIG] APNS URL: $apnsUrl")
+        logger.info("[APNS CONFIG] APNS Topic: $apnsTopic")
 
         return try {
             val apnsPayload = buildApnsPayload(notification)
-
-            logger.info("Sending push notification to device: $deviceIdentifier")
-            logger.info("APNS topic: $apnsTopic")
+            
+            logger.info("[APNS REQUEST] Sending push notification to device: $deviceIdentifier")
+            logger.info("[APNS REQUEST] Device Token: ${pushToken.take(20)}...")
+            logger.info("[APNS REQUEST] Full URL: ${apnsUrl}/$pushToken")
+            logger.info("[APNS REQUEST] Headers: apns-topic=$apnsTopic, apns-push-type=alert")
+            logger.debug("[APNS REQUEST] Payload: $apnsPayload")
 
             val response: ResponseEntity<String> =
                 if (client is ApnsTokenClient) {
+                    logger.info("[APNS CLIENT] Using Token-based client (ApnsTokenClient)")
                     client.sendPushNotification(
                         deviceToken = pushToken,
                         payload = apnsPayload,
@@ -67,6 +79,7 @@ class PushNotificationService(
                         apnsPushType = "alert",
                     )
                 } else {
+                    logger.info("[APNS CLIENT] Using Certificate-based client (ApnsClient)")
                     (client as ApnsClient).sendPushNotification(
                         deviceToken = pushToken,
                         payload = apnsPayload,
@@ -77,8 +90,15 @@ class PushNotificationService(
 
             val success = response.statusCode.is2xxSuccessful
 
-            logger.info("APNS Response Status: ${response.statusCode}")
-            logger.info("APNS Response Body: ${response.body}")
+            logger.info("[APNS RESPONSE] Status: ${response.statusCode}")
+            logger.info("[APNS RESPONSE] Body: ${response.body}")
+            logger.info("[APNS RESPONSE] Headers: ${response.headers}")
+            
+            if (success) {
+                logger.info("[APNS SUCCESS] Push notification sent successfully to device: $deviceIdentifier")
+            } else {
+                logger.error("[APNS ERROR] Push notification failed for device: $deviceIdentifier, status=${response.statusCode}")
+            }
 
             PushNotificationResult(
                 deviceIdentifier = deviceIdentifier,
@@ -92,7 +112,8 @@ class PushNotificationService(
                 statusCode = response.statusCode.value(),
             )
         } catch (e: Exception) {
-            logger.error("Failed to send push notification to device: $deviceIdentifier", e)
+            logger.error("[APNS EXCEPTION] Failed to send push notification to device: $deviceIdentifier", e)
+            logger.error("[APNS EXCEPTION] Error type: ${e.javaClass.simpleName}, message: ${e.message}")
             PushNotificationResult(
                 deviceIdentifier = deviceIdentifier,
                 success = false,
@@ -105,8 +126,10 @@ class PushNotificationService(
         deviceIdentifier: String,
         notification: PushNotificationRequest,
     ): PushNotificationResult {
+        logger.info("[SERVICE] sendPushToDevice (lookup) called with deviceIdentifier=$deviceIdentifier")
+        
         if (deviceServiceClient == null) {
-            logger.warn("Device service client not available")
+            logger.warn("[SERVICE ERROR] Device service client not available")
             return PushNotificationResult(
                 deviceIdentifier = deviceIdentifier,
                 success = false,
@@ -115,8 +138,12 @@ class PushNotificationService(
         }
 
         return try {
+            logger.info("[FEIGN CLIENT] Calling device-service to get device: $deviceIdentifier")
             val deviceResponse = deviceServiceClient.getDevice(deviceIdentifier)
+            logger.info("[FEIGN CLIENT] Device service response: status=${deviceResponse.statusCode}")
+            
             if (!deviceResponse.statusCode.is2xxSuccessful || deviceResponse.body == null) {
+                logger.warn("[FEIGN CLIENT ERROR] Device not found or inactive: $deviceIdentifier")
                 return PushNotificationResult(
                     deviceIdentifier = deviceIdentifier,
                     success = false,
@@ -125,9 +152,10 @@ class PushNotificationService(
             }
 
             val device = deviceResponse.body!!
+            logger.info("[FEIGN CLIENT] Device found: pushToken=${device.pushToken.take(10)}..., deviceIdentifier=${device.deviceIdentifier}")
             return sendPushToDevice(deviceIdentifier, device.pushToken, notification)
         } catch (e: Exception) {
-            logger.error("Failed to fetch device or send push to device: $deviceIdentifier", e)
+            logger.error("[FEIGN CLIENT ERROR] Failed to fetch device or send push to device: $deviceIdentifier", e)
             return PushNotificationResult(
                 deviceIdentifier = deviceIdentifier,
                 success = false,
@@ -140,8 +168,10 @@ class PushNotificationService(
         storeId: String,
         notification: PushNotificationRequest,
     ): List<PushNotificationResult> {
+        logger.info("[SERVICE] sendPushToStore called with storeId=$storeId")
+        
         if (deviceServiceClient == null) {
-            logger.warn("Device service client not available")
+            logger.warn("[SERVICE ERROR] Device service client not available")
             return listOf(
                 PushNotificationResult(
                     deviceIdentifier = "store:$storeId",
@@ -152,8 +182,12 @@ class PushNotificationService(
         }
 
         return try {
+            logger.info("[FEIGN CLIENT] Calling device-service to get devices for store: $storeId")
             val devicesResponse = deviceServiceClient.getDevicesByStore(storeId)
+            logger.info("[FEIGN CLIENT] Device service response: status=${devicesResponse.statusCode}")
+            
             if (!devicesResponse.statusCode.is2xxSuccessful || devicesResponse.body == null) {
+                logger.warn("[FEIGN CLIENT ERROR] No devices found for store: $storeId")
                 return listOf(
                     PushNotificationResult(
                         deviceIdentifier = "store:$storeId",
@@ -164,11 +198,18 @@ class PushNotificationService(
             }
 
             val devices = devicesResponse.body!!
-            return devices.filter { it.isActive }.map { device ->
+            logger.info("[FEIGN CLIENT] Found ${devices.size} devices for store: $storeId")
+            
+            val results = devices.filter { it.isActive }.map { device ->
+                logger.debug("[SERVICE] Sending push to device: ${device.deviceIdentifier}, pushToken=${device.pushToken.take(10)}...")
                 sendPushToDevice(device.deviceIdentifier, device.pushToken, notification)
             }
+            
+            val successCount = results.count { it.success }
+            logger.info("[SERVICE RESPONSE] Push to store completed: ${successCount}/${results.size} successful")
+            results
         } catch (e: Exception) {
-            logger.error("Failed to send push to store: $storeId", e)
+            logger.error("[SERVICE ERROR] Failed to send push to store: $storeId", e)
             return listOf(
                 PushNotificationResult(
                     deviceIdentifier = "store:$storeId",
@@ -183,7 +224,10 @@ class PushNotificationService(
         targets: List<PushNotificationTarget>,
         notification: PushNotificationRequest,
     ): List<PushNotificationResult> {
+        logger.info("[SERVICE] sendBulkPush called with ${targets.size} targets")
+        
         return targets.map { target ->
+            logger.debug("[SERVICE] Processing bulk push target: deviceIdentifier=${target.deviceIdentifier}")
             sendPushToDevice(target.deviceIdentifier, notification)
         }
     }
@@ -214,7 +258,9 @@ class PushNotificationService(
         val payload = mutableMapOf<String, Any>("aps" to aps)
         notification.customData?.let { payload.putAll(it) }
 
-        return objectMapper.writeValueAsString(payload)
+        val jsonPayload = objectMapper.writeValueAsString(payload)
+        logger.debug("[APNS PAYLOAD] Built APNS payload: $jsonPayload")
+        return jsonPayload
     }
 }
 

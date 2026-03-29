@@ -1,0 +1,68 @@
+{{- if and .Values.kafkaUi.enabled .Values.kafka.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.kafkaUi.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.kafkaUi.name }}
+spec:
+  replicas: {{ .Values.kafkaUi.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.kafkaUi.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.kafkaUi.name }}
+        {{- include "drinkwater.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: kafka-ui
+          image: {{ .Values.kafkaUi.image }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: "drinkwater-kafka"
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: "{{ .Values.kafka.service.name }}:{{ .Values.kafka.service.port }}"
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL
+              value: "PLAINTEXT"
+          resources:
+            {{- toYaml .Values.kafkaUi.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.kafkaUi.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.kafkaUi.name }}
+spec:
+  type: {{ .Values.kafkaUi.service.type }}
+  selector:
+    app: {{ .Values.kafkaUi.name }}
+  ports:
+    - port: {{ .Values.kafkaUi.service.port }}
+      targetPort: 8080
+      {{- if eq .Values.kafkaUi.service.type "NodePort" }}
+      nodePort: {{ .Values.kafkaUi.service.nodePort }}
+      {{- end }}
+      name: http
+{{- end }}

@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
         - name: water-service
-          image: drinkwater/water-service:1.0.0
-          imagePullPolicy: IfNotPresent
+          image: drinkwater/water-service:1.0.1
+          imagePullPolicy: Never
           ports:
             - containerPort: 8083
               name: http

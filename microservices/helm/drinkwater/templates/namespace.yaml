@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "drinkwater.namespace" . }}
+  labels:
+    name: {{ include "drinkwater.namespace" . }}
+    {{- include "drinkwater.labels" . | nindent 4 }}

@@ -1,0 +1,95 @@
+{{- if .Values.waterService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.waterService.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.waterService.name }}
+spec:
+  replicas: {{ .Values.waterService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.waterService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.waterService.name }}
+        {{- include "drinkwater.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Values.waterService.name }}
+          image: "{{ include "drinkwater.imageRepository" . }}/{{ .Values.waterService.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.waterService.port }}
+              name: http
+          env:
+            - name: SERVER_PORT
+              value: {{ .Values.waterService.port | quote }}
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: WATER_DB_URL
+            - name: DEVICE_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: DEVICE_SERVICE_URL
+            - name: PUSH_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: PUSH_SERVICE_URL
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+            {{- if .Values.waterService.kafka.enabled }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.waterService.kafka.bootstrapServers | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.waterService.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.waterService.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.waterService.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.waterService.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.waterService.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.waterService.name }}
+  ports:
+    - port: {{ .Values.waterService.port }}
+      targetPort: {{ .Values.waterService.port }}
+      name: http
+{{- end }}

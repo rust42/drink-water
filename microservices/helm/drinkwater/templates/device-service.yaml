@@ -1,0 +1,85 @@
+{{- if .Values.deviceService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deviceService.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.deviceService.name }}
+spec:
+  replicas: {{ .Values.deviceService.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.deviceService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.deviceService.name }}
+        {{- include "drinkwater.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Values.deviceService.name }}
+          image: "{{ include "drinkwater.imageRepository" . }}/{{ .Values.deviceService.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.deviceService.port }}
+              name: http
+          env:
+            - name: SERVER_PORT
+              value: {{ .Values.deviceService.port | quote }}
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: DEVICE_DB_URL
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+            {{- if .Values.deviceService.kafka.enabled }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ .Values.deviceService.kafka.bootstrapServers | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.deviceService.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.deviceService.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: {{ .Values.deviceService.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.deviceService.name }}
+  namespace: {{ include "drinkwater.namespace" . }}
+  labels:
+    {{- include "drinkwater.labels" . | nindent 4 }}
+    app: {{ .Values.deviceService.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.deviceService.name }}
+  ports:
+    - port: {{ .Values.deviceService.port }}
+      targetPort: {{ .Values.deviceService.port }}
+      name: http
+{{- end }}

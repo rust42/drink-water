@@ -2,7 +2,75 @@
 
 This directory contains Kubernetes manifests for deploying the Drink Water microservices.
 
-## Architecture
+## Quick Start Options
+
+- **Option 1: Helm (Recommended)** - Easiest way to deploy with customizable values
+- **Option 2: kubectl** - Manual deployment with raw YAML files
+
+---
+
+## Option 1: Helm Deployment (Recommended)
+
+### Prerequisites
+
+1. Helm 3.2+ installed
+2. Kubernetes cluster (v1.24+)
+3. kubectl configured
+
+### Deploy with Helm
+
+```bash
+# Navigate to helm chart
+cd ../helm/drinkwater
+
+# Install the chart
+helm install drinkwater .
+
+# Or with custom values
+helm install drinkwater . -f custom-values.yaml
+
+# Upgrade
+helm upgrade drinkwater .
+
+# Uninstall
+helm uninstall drinkwater
+```
+
+### Helm Configuration
+
+Key configurable values (see `../helm/drinkwater/values.yaml`):
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `image.tag` | Image version | `1.0.1` |
+| `namespace` | Deployment namespace | `drinkwater` |
+| `kafka.enabled` | Enable Kafka | `true` |
+| `deviceService.replicaCount` | Device service replicas | `1` |
+| `pushService.replicaCount` | Push service replicas | `1` |
+| `pushService.secret.certPassword` | APNS cert password | `sandycorolla` |
+
+### Custom Values Example
+
+Create `custom-values.yaml`:
+
+```yaml
+image:
+  tag: "1.0.2"
+  registry: "ghcr.io/your-org"
+
+namespace: production
+
+pushService:
+  replicaCount: 2
+  secret:
+    certPassword: "your-secure-password"
+```
+
+---
+
+## Option 2: kubectl Deployment (Manual)
+
+### Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -22,7 +90,7 @@ This directory contains Kubernetes manifests for deploying the Drink Water micro
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Files
+### Files
 
 | File | Description |
 |------|-------------|
@@ -97,22 +165,45 @@ kubectl logs -f deployment/water-service -n drinkwater
 
 ### 5. Access Services
 
-For local testing with minikube/kind:
+#### Option A: Single Port (Recommended) - Using NGINX Gateway
+
+All APIs exposed on single port **30080** with path-based routing:
 
 ```bash
-# Port forward to access from localhost
+# Deploy the nginx gateway (included in k8s directory)
+kubectl apply -f k8s/50-nginx-gateway.yaml
+
+# Access all services on localhost:30080
+# Device Service:   http://localhost:30080/api/devices/*
+# Push Service:     http://localhost:30080/api/push-notifications/*
+# Water Service:    http://localhost:30080/api/water/*
+
+# Test examples:
+curl http://localhost:30080/api/devices/register \
+  -H "Content-Type: application/json" \
+  -d '{"deviceIdentifier":"test","pushToken":"token","storeId":"s1"}'
+
+curl http://localhost:30080/api/water/intake \
+  -H "Content-Type: application/json" \
+  -d '{"deviceIdentifier":"test","amount":250}'
+
+curl http://localhost:30080/api/water/reminder/test
+```
+
+#### Option B: Multiple Ports - Individual Port Forwarding
+
+```bash
+# Port forward each service to different localhost ports
 kubectl port-forward service/device-service 8081:8081 -n drinkwater &
 kubectl port-forward service/push-service 8082:8082 -n drinkwater &
 kubectl port-forward service/water-service 8083:8083 -n drinkwater &
 ```
 
-For production with LoadBalancer:
+#### Option C: Cloud Deployment with LoadBalancer
 
 ```bash
-# Change service type to LoadBalancer in YAML files or patch
-kubectl patch service device-service -n drinkwater -p '{"spec":{"type":"LoadBalancer"}}'
-kubectl patch service push-service -n drinkwater -p '{"spec":{"type":"LoadBalancer"}}'
-kubectl patch service water-service -n drinkwater -p '{"spec":{"type":"LoadBalancer"}}'
+# Change nginx-gateway to LoadBalancer for cloud deployments
+kubectl patch service nginx-gateway -n drinkwater -p '{"spec":{"type":"LoadBalancer"}}'
 ```
 
 ## Configuration
@@ -218,3 +309,20 @@ kubectl exec -it deployment/push-service -n drinkwater -- /bin/sh
 # Check certificate exists
 ls -la /app/certs/
 ```
+
+## Kafka UI
+
+Deploy Kafka UI to browse topics and messages:
+
+```bash
+# Deploy Kafka UI
+kubectl apply -f k8s/65-kafka-ui.yaml
+
+# Access Kafka UI at http://localhost:30081
+```
+
+Features:
+- View all Kafka topics (`device-registered`, `water-intake-recorded`, `hydration-reminder`)
+- Browse messages in real-time
+- See consumer groups and lag
+- Monitor Kafka cluster health

@@ -1,0 +1,142 @@
+# Default values for drinkwater chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+namespace: drinkwater
+
+# Image settings
+image:
+  registry: docker.io
+  repository: drinkwater
+  tag: 1.0.1
+  pullPolicy: IfNotPresent
+
+# Kafka settings
+kafka:
+  enabled: true
+  image: confluentinc/cp-kafka:7.5.0
+  replicas: 1
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+  nodeId: "1"
+  clusterId: "ODk0YjNlYzZjYjRiNDM3ZD"
+  service:
+    name: kafka-broker
+    port: 9092
+
+# Device Service settings
+deviceService:
+  enabled: true
+  name: device-service
+  port: 8081
+  replicaCount: 1
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  dbUrl: jdbc:h2:mem:device-db
+  kafka:
+    enabled: true
+    bootstrapServers: kafka-broker:9092
+
+# Push Service settings
+pushService:
+  enabled: true
+  name: push-service
+  port: 8082
+  replicaCount: 1
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  dbUrl: jdbc:h2:mem:push-db
+  kafka:
+    enabled: true
+    bootstrapServers: kafka-broker:9092
+  apns:
+    certPath: /app/certs/PushNotification.p12
+    topic: com.sk.drink-water
+    sandboxEnabled: "true"
+    tokenEnabled: "false"
+  secret:
+    certPassword: sandycorolla
+
+# Water Service settings
+waterService:
+  enabled: true
+  name: water-service
+  port: 8083
+  replicaCount: 1
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  dbUrl: jdbc:h2:mem:water-db
+  kafka:
+    enabled: true
+    bootstrapServers: kafka-broker:9092
+
+# ConfigMap settings
+config:
+  springProfilesActive: kubernetes
+  loggingLevel: DEBUG
+
+# Service URLs (internal cluster DNS)
+services:
+  device:
+    url: http://device-service:8081
+  push:
+    url: http://push-service:8082
+  water:
+    url: http://water-service:8083
+
+# NGINX Gateway (single port access)
+gateway:
+  enabled: true
+  name: nginx-gateway
+  image: nginx:alpine
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 80
+    nodePort: 30080
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 200m
+
+# Kafka UI (for browsing Kafka topics and messages)
+kafkaUi:
+  enabled: true
+  name: kafka-ui
+  image: provectuslabs/kafka-ui:latest
+  replicaCount: 1
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30081
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
