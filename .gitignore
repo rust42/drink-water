@@ -1,0 +1,245 @@
+# ============================================================
+# Gradle
+# ============================================================
+.gradle/
+build/
+*/build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ============================================================
+# Java / Kotlin compiled output
+# ============================================================
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+*.war
+*.ear
+*.nar
+*.so
+*.dylib
+*.dll
+
+# Kotlin compiler artifacts
+.kotlin/
+
+# ============================================================
+# Spring Boot
+# ============================================================
+spring-shell.log
+/HELP.md
+
+# ============================================================
+# Maven (if ever used alongside Gradle)
+# ============================================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ============================================================
+# Node.js / npm / yarn / pnpm
+# ============================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+package-lock.json
+# Uncomment if not committing lockfiles:
+# yarn.lock
+# pnpm-lock.yaml
+
+# ============================================================
+# React / Vite / Frontend build outputs
+# ============================================================
+dist/
+dist-ssr/
+.next/
+.nuxt/
+.svelte-kit/
+.output/
+.vercel/
+.netlify/
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Vite
+*.local
+vite.config.*.timestamp*
+
+# Storybook
+storybook-static/
+
+# Testing
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ============================================================
+# IntelliJ IDEA / JetBrains
+# ============================================================
+.idea/
+*.iws
+*.iml
+*.ipr
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# ============================================================
+# Eclipse / STS
+# ============================================================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ============================================================
+# NetBeans
+# ============================================================
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+
+# ============================================================
+# VS Code
+# ============================================================
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ============================================================
+# macOS
+# ============================================================
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+__MACOSX/
+
+# ============================================================
+# Windows
+# ============================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================================
+# Linux
+# ============================================================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+log/
+
+# ============================================================
+# Secrets, certificates & keys (NEVER commit these)
+# ============================================================
+*.p8
+*.p12
+*.pem
+*.key
+*.jks
+*.keystore
+*.truststore
+*.crt
+*.cer
+*.der
+secrets/
+secret/
+private/
+
+# ============================================================
+# Environment & local config
+# ============================================================
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+local.properties
+application-local.yml
+application-local.yaml
+application-local.properties
+
+# ============================================================
+# Docker
+# ============================================================
+Dockerfile.local
+.docker-volumes/
+docker-compose.override.yml
+
+# ============================================================
+# Kubernetes / Helm
+# ============================================================
+*.kubeconfig
+kubeconfig
+
+# ============================================================
+# Cache & temp files
+# ============================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+.cache/
+.temp/
+tmp/
+temp/
+
+# ============================================================
+# Test & coverage reports
+# ============================================================
+reports/
+!**/src/**/reports/
+jacoco.exec

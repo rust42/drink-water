@@ -1,11 +1,17 @@
 plugins {
     id("org.springframework.boot") version "3.2.0" apply false
-    id("io.spring.dependency-management") version "1.1.3" apply false
+    id("io.spring.dependency-management") version "1.1.4" apply false
     id("org.jetbrains.kotlin.jvm") version "1.9.21" apply false
     id("org.jetbrains.kotlin.plugin.spring") version "1.9.21" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.0" apply false
+    id("java")
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 allprojects {
     group = "com.example.drink-water"
     version = "1.0.0"
@@ -22,6 +28,12 @@ subprojects {
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+
+    configure<JavaPluginExtension> {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
 
     the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().imports {
         mavenBom("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
@@ -78,7 +90,6 @@ project(":push-service") {
         add("implementation", "io.github.openfeign:feign-okhttp:13.1")
         add("implementation", "com.squareup.okhttp3:okhttp:4.12.0")
         add("implementation", "com.auth0:java-jwt:4.4.0")
-        add("implementation", "org.bouncycastle:bcprov-jdk18on:1.77")
     }
 }
 

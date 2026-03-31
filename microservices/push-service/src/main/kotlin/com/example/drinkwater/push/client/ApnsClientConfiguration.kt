@@ -19,7 +19,7 @@ import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
 @Configuration
-@ConditionalOnProperty(name = ["push.apns.cert.path"])
+@ConditionalOnProperty(name = ["push.apns.token.enabled"], havingValue = "false", matchIfMissing = true)
 class ApnsClientConfiguration {
     @Value("\${push.apns.cert.path}")
     private lateinit var certPath: String

@@ -43,13 +43,21 @@ spec:
                 configMapKeyRef:
                   name: drinkwater-config
                   key: PUSH_APNS_TOPIC
-            - name: PUSH_APNS_CERT_PATH
-              value: "/app/certs/PushNotification.p12"
-            - name: PUSH_APNS_CERT_PASSWORD
+            - name: PUSH_APNS_TOKEN_P8_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: drinkwater-config
+                  key: PUSH_APNS_TOKEN_P8_PATH
+            - name: PUSH_APNS_TOKEN_KEY_ID
               valueFrom:
                 secretKeyRef:
-                  name: apns-cert-secret
-                  key: cert-password
+                  name: apns-p8-secret
+                  key: key-id
+            - name: PUSH_APNS_TOKEN_TEAM_ID
+              valueFrom:
+                secretKeyRef:
+                  name: apns-p8-secret
+                  key: team-id
             - name: PUSH_APNS_SANDBOX_ENABLED
               valueFrom:
                 configMapKeyRef:
@@ -102,11 +110,10 @@ spec:
       volumes:
         - name: apns-certs
           secret:
-            secretName: apns-cert-secret
-            # Uncomment if using p12 file directly:
-            # items:
-            #   - key: PushNotification.p12
-            #     path: PushNotification.p12
+            secretName: apns-p8-secret
+            items:
+              - key: AuthKey_C8Y2JTN2UQ.p8
+                path: AuthKey_C8Y2JTN2UQ.p8
 ---
 apiVersion: v1
 kind: Service

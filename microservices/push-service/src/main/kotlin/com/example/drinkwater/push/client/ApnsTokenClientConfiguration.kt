@@ -3,6 +3,7 @@ package com.example.drinkwater.push.client
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import okhttp3.Interceptor
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
@@ -30,6 +31,7 @@ class ApnsTokenClientConfiguration {
     private lateinit var p8Path: String
 
     private val tokenCache = ConcurrentHashMap<String, TokenInfo>()
+    private val logger = LoggerFactory.getLogger(ApnsTokenClientConfiguration::class.java)
 
     @Bean
     fun apnsTokenInterceptor(): Interceptor {
@@ -67,21 +69,23 @@ class ApnsTokenClientConfiguration {
             Files.readString(p8File.toPath())
                 .replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
-                .replace("\n", "")
-                .trim()
+                .replace(Regex("\\s"), "")
 
         val decodedKey = Base64.getDecoder().decode(keyContent)
         val keySpec = PKCS8EncodedKeySpec(decodedKey)
-        val keyFactory = KeyFactory.getInstance("EC", "BC")
+        val keyFactory = KeyFactory.getInstance("EC")
         val privateKey = keyFactory.generatePrivate(keySpec) as ECPrivateKey
 
         val algorithm = Algorithm.ECDSA256(null, privateKey)
 
-        return JWT.create()
+        val token = JWT.create()
+            .withKeyId(keyId)
             .withIssuer(teamId)
             .withIssuedAt(Date())
-            .withHeader(mapOf("alg" to "ES256", "kid" to keyId))
             .sign(algorithm)
+
+        logger.info("[APNS JWT] Generated token — kid={}, iss={}, iat={}", keyId, teamId, Instant.now().epochSecond)
+        return token
     }
 
     data class TokenInfo(val token: String, val createdAt: Instant) {
