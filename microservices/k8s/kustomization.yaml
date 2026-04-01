@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: drinkwater
+
+resources:
+  - 00-namespace.yaml
+  - 01-configmap.yaml
+  - 02-secrets.yaml
+  - 10-device-service.yaml
+  - 20-push-service.yaml
+  - 30-water-service.yaml
+  - 05-frontend.yaml
+  - 40-ingress.yaml
+
+images:
+  - name: drinkwater/frontend
+    newTag: 1.0.0
+  - name: drinkwater/device-service
+    newTag: 1.0.0
+  - name: drinkwater/push-service
+    newTag: 1.0.0
+  - name: drinkwater/water-service
+    newTag: 1.0.0
+
+commonLabels:
+  app.kubernetes.io/managed-by: github-actions
+  app.kubernetes.io/part-of: drinkwater
