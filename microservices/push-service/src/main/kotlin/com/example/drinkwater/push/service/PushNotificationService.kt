@@ -25,8 +25,8 @@ class PushNotificationService(
     private lateinit var apnsTopic: String
 
     @Value("\${push.apns.token.enabled:false}")
-    private var tokenAuthEnabled: Boolean = false
-    
+    private var tokenAuthEnabled: Boolean = true
+
     @Value("\${push.apns.sandbox.url:https://api.sandbox.push.apple.com/3/device}")
     private lateinit var apnsUrl: String
 
@@ -37,7 +37,7 @@ class PushNotificationService(
     ): PushNotificationResult {
         logger.info("[SERVICE] sendPushToDevice called with deviceIdentifier=$deviceIdentifier")
         logger.debug("[SERVICE PARAMS] pushToken=${pushToken.take(10)}..., notification title=${notification.title}, body=${notification.body}")
-        
+
         // Use token-based client if enabled, otherwise fall back to certificate-based
         val client = if (tokenAuthEnabled && apnsTokenClient != null) apnsTokenClient else apnsClient
 
@@ -62,7 +62,7 @@ class PushNotificationService(
 
         return try {
             val apnsPayload = buildApnsPayload(notification)
-            
+
             logger.info("[APNS REQUEST] Sending push notification to device: $deviceIdentifier")
             logger.info("[APNS REQUEST] Device Token: ${pushToken.take(20)}...")
             logger.info("[APNS REQUEST] Full URL: ${apnsUrl}/$pushToken")
@@ -93,7 +93,7 @@ class PushNotificationService(
             logger.info("[APNS RESPONSE] Status: ${response.statusCode}")
             logger.info("[APNS RESPONSE] Body: ${response.body}")
             logger.info("[APNS RESPONSE] Headers: ${response.headers}")
-            
+
             if (success) {
                 logger.info("[APNS SUCCESS] Push notification sent successfully to device: $deviceIdentifier")
             } else {
@@ -127,7 +127,7 @@ class PushNotificationService(
         notification: PushNotificationRequest,
     ): PushNotificationResult {
         logger.info("[SERVICE] sendPushToDevice (lookup) called with deviceIdentifier=$deviceIdentifier")
-        
+
         if (deviceServiceClient == null) {
             logger.warn("[SERVICE ERROR] Device service client not available")
             return PushNotificationResult(
@@ -141,7 +141,7 @@ class PushNotificationService(
             logger.info("[FEIGN CLIENT] Calling device-service to get device: $deviceIdentifier")
             val deviceResponse = deviceServiceClient.getDevice(deviceIdentifier)
             logger.info("[FEIGN CLIENT] Device service response: status=${deviceResponse.statusCode}")
-            
+
             if (!deviceResponse.statusCode.is2xxSuccessful || deviceResponse.body == null) {
                 logger.warn("[FEIGN CLIENT ERROR] Device not found or inactive: $deviceIdentifier")
                 return PushNotificationResult(
@@ -169,7 +169,7 @@ class PushNotificationService(
         notification: PushNotificationRequest,
     ): List<PushNotificationResult> {
         logger.info("[SERVICE] sendPushToStore called with storeId=$storeId")
-        
+
         if (deviceServiceClient == null) {
             logger.warn("[SERVICE ERROR] Device service client not available")
             return listOf(
@@ -185,7 +185,7 @@ class PushNotificationService(
             logger.info("[FEIGN CLIENT] Calling device-service to get devices for store: $storeId")
             val devicesResponse = deviceServiceClient.getDevicesByStore(storeId)
             logger.info("[FEIGN CLIENT] Device service response: status=${devicesResponse.statusCode}")
-            
+
             if (!devicesResponse.statusCode.is2xxSuccessful || devicesResponse.body == null) {
                 logger.warn("[FEIGN CLIENT ERROR] No devices found for store: $storeId")
                 return listOf(
@@ -199,12 +199,12 @@ class PushNotificationService(
 
             val devices = devicesResponse.body!!
             logger.info("[FEIGN CLIENT] Found ${devices.size} devices for store: $storeId")
-            
+
             val results = devices.filter { it.isActive }.map { device ->
                 logger.debug("[SERVICE] Sending push to device: ${device.deviceIdentifier}, pushToken=${device.pushToken.take(10)}...")
                 sendPushToDevice(device.deviceIdentifier, device.pushToken, notification)
             }
-            
+
             val successCount = results.count { it.success }
             logger.info("[SERVICE RESPONSE] Push to store completed: ${successCount}/${results.size} successful")
             results
@@ -225,7 +225,7 @@ class PushNotificationService(
         notification: PushNotificationRequest,
     ): List<PushNotificationResult> {
         logger.info("[SERVICE] sendBulkPush called with ${targets.size} targets")
-        
+
         return targets.map { target ->
             logger.debug("[SERVICE] Processing bulk push target: deviceIdentifier=${target.deviceIdentifier}")
             sendPushToDevice(target.deviceIdentifier, notification)

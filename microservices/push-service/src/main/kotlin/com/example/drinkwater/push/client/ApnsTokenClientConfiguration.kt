@@ -21,13 +21,15 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 @ConditionalOnProperty(name = ["push.apns.token.enabled"], havingValue = "true")
 class ApnsTokenClientConfiguration {
-    @Value("\${push.apns.token.key-id}")
+    // Empty-string defaults prevent binding failures when the docker profile is not active.
+    // Values must be non-blank at token generation time (validated in generateJwtToken).
+    @Value("\${push.apns.token.key-id:}")
     private lateinit var keyId: String
 
-    @Value("\${push.apns.token.team-id}")
+    @Value("\${push.apns.token.team-id:}")
     private lateinit var teamId: String
 
-    @Value("\${push.apns.token.p8-path}")
+    @Value("\${push.apns.token.p8-path:}")
     private lateinit var p8Path: String
 
     private val tokenCache = ConcurrentHashMap<String, TokenInfo>()
@@ -60,9 +62,15 @@ class ApnsTokenClientConfiguration {
     }
 
     private fun generateJwtToken(): String {
+        if (keyId.isBlank() || teamId.isBlank() || p8Path.isBlank()) {
+            throw IllegalStateException(
+                "[APNS] Token-based auth is enabled but configuration is incomplete. " +
+                    "Set PUSH_APNS_TOKEN_KEY_ID, PUSH_APNS_TOKEN_TEAM_ID, and PUSH_APNS_TOKEN_P8_PATH.",
+            )
+        }
         val p8File = File(p8Path)
         if (!p8File.exists()) {
-            throw RuntimeException("APNS p8 file not found at: $p8Path")
+            throw RuntimeException("[APNS] p8 key file not found at: $p8Path")
         }
 
         val keyContent =
