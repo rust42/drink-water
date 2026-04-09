@@ -14,9 +14,15 @@ class DeviceService(private val deviceRepository: DeviceRepository) {
     private val logger = LoggerFactory.getLogger(DeviceService::class.java)
 
     fun registerDevice(request: DeviceRegistrationRequest): DeviceRegistrationResponse {
-        logger.info("[SERVICE] registerDevice called with deviceIdentifier=${request.deviceIdentifier}, storeId=${request.storeId}")
-        logger.debug("[SERVICE REQUEST BODY] deviceIdentifier=${request.deviceIdentifier}, pushToken=${request.pushToken.take(10)}..., storeId=${request.storeId}, deviceName=${request.deviceName}, platform=${request.platform}, osVersion=${request.osVersion}, appVersion=${request.appVersion}")
-        
+        logger.info(
+            "[SERVICE] registerDevice called with deviceIdentifier=${request.deviceIdentifier}, storeId=${request.storeId}",
+        )
+        logger.debug(
+            "[SERVICE REQUEST BODY] deviceIdentifier=${request.deviceIdentifier}, pushToken=${request.pushToken.take(
+                10,
+            )}..., storeId=${request.storeId}, deviceName=${request.deviceName}, platform=${request.platform}, osVersion=${request.osVersion}, appVersion=${request.appVersion}",
+        )
+
         if (deviceRepository.existsByDeviceIdentifier(request.deviceIdentifier)) {
             logger.warn("[SERVICE ERROR] Device with identifier ${request.deviceIdentifier} already exists")
             throw ResponseStatusException(
@@ -37,7 +43,9 @@ class DeviceService(private val deviceRepository: DeviceRepository) {
             )
 
         val savedDevice = deviceRepository.save(device)
-        logger.info("[SERVICE RESPONSE] Device saved successfully: id=${savedDevice.id}, deviceIdentifier=${savedDevice.deviceIdentifier}")
+        logger.info(
+            "[SERVICE RESPONSE] Device saved successfully: id=${savedDevice.id}, deviceIdentifier=${savedDevice.deviceIdentifier}",
+        )
 
         return DeviceRegistrationResponse(
             id = savedDevice.id!!,
@@ -58,9 +66,9 @@ class DeviceService(private val deviceRepository: DeviceRepository) {
     fun getDevice(deviceIdentifier: String): Device {
         logger.info("[SERVICE] getDevice called with deviceIdentifier=$deviceIdentifier")
         return deviceRepository.findByDeviceIdentifierAndIsActive(deviceIdentifier, true)
-            .orElseThrow { 
+            .orElseThrow {
                 logger.warn("[SERVICE ERROR] Device not found: $deviceIdentifier")
-                IllegalArgumentException("Device not found: $deviceIdentifier") 
+                IllegalArgumentException("Device not found: $deviceIdentifier")
             }
     }
 
@@ -75,9 +83,9 @@ class DeviceService(private val deviceRepository: DeviceRepository) {
         logger.info("[SERVICE] deactivateDevice called with deviceIdentifier=$deviceIdentifier")
         val device =
             deviceRepository.findByDeviceIdentifier(deviceIdentifier)
-                .orElseThrow { 
+                .orElseThrow {
                     logger.warn("[SERVICE ERROR] Device not found for deactivation: $deviceIdentifier")
-                    IllegalArgumentException("Device not found: $deviceIdentifier") 
+                    IllegalArgumentException("Device not found: $deviceIdentifier")
                 }
         device.isActive = false
         deviceRepository.save(device)
@@ -136,10 +144,18 @@ class DeviceService(private val deviceRepository: DeviceRepository) {
             }
     }
 
+    fun getAllDevices(): List<Device> {
+        logger.info("[SERVICE] getAllDevices called")
+        val devices = deviceRepository.findAll()
+        logger.info("[SERVICE RESPONSE] Found ${devices.size} devices total")
+        return devices
+    }
+
     fun getAllActiveDevices(): List<DeviceRegistrationResponse> {
         logger.info("[SERVICE] getAllActiveDevices called")
-        val devices = deviceRepository.findAll()
-            .filter { it.isActive }
+        val devices =
+            deviceRepository.findAll()
+                .filter { it.isActive }
         logger.info("[SERVICE RESPONSE] Found ${devices.size} active devices")
         return devices
             .map { device ->

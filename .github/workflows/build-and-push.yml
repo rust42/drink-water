@@ -79,9 +79,53 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/frontend
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix=,suffix=,format=short
+          latest
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./microservices/frontend
+        file: ./microservices/frontend/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8083' }}
+
   verify-manifests:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: [build-and-push, build-frontend]
     if: github.event_name != 'pull_request'
     steps:
     - name: Checkout repository
@@ -97,6 +141,7 @@ jobs:
         sed -i "s|image: drinkwater/device-service:.*|image: ghcr.io/${{ github.repository_owner }}/device-service:sha-${SHA}|g" k8s/10-device-service.yaml
         sed -i "s|image: drinkwater/push-service:.*|image: ghcr.io/${{ github.repository_owner }}/push-service:sha-${SHA}|g" k8s/20-push-service.yaml
         sed -i "s|image: drinkwater/water-service:.*|image: ghcr.io/${{ github.repository_owner }}/water-service:sha-${SHA}|g" k8s/30-water-service.yaml
+        sed -i "s|image: drinkwater/frontend:.*|image: ghcr.io/${{ github.repository_owner }}/frontend:sha-${SHA}|g" k8s/40-frontend.yaml
         
         echo "Updated K8s manifests with new image tags"
         grep -A2 "image:" k8s/*.yaml | grep ghcr.io || echo "No ghcr.io images found"

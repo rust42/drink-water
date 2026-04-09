@@ -4,7 +4,7 @@ import { deviceApi } from '@/lib/api';
 
 // Hook for real-time device updates
 export function useRealtimeDevices(interval = 5000) {
-  const { currentStoreId, selectedDevice, setSelectedDevice, setToast } = useAppStore();
+  const { currentStoreId, selectedDevice, setSelectedDevice } = useAppStore();
 
   const refreshDevices = useCallback(async () => {
     try {
@@ -72,7 +72,7 @@ export function LiveIndicator() {
 // Hook for visibility change (pause polling when tab hidden)
 export function useVisibilityPause(callback: () => void, interval: number) {
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
 
     const startPolling = () => {
       timer = setInterval(callback, interval);

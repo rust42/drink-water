@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DevicesTab } from '@/components/tabs/DevicesTab';
 import { NotificationsTab } from '@/components/tabs/NotificationsTab';
+import { PushConfigTab } from '@/components/tabs/PushConfigTab';
 import { AnalyticsTab } from '@/components/tabs/AnalyticsTab';
 import { MonitoringTab } from '@/components/tabs/MonitoringTab';
 import { Toast } from '@/components/ui/Toast';
@@ -42,6 +43,7 @@ export function App() {
             >
               {activeTab === 'devices' && <DevicesTab />}
               {activeTab === 'notifications' && <NotificationsTab />}
+              {activeTab === 'push-config' && <PushConfigTab />}
               {activeTab === 'analytics' && <AnalyticsTab />}
               {activeTab === 'monitoring' && <MonitoringTab />}
             </motion.div>

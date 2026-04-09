@@ -3,12 +3,16 @@ kind: Ingress
 metadata:
   name: drinkwater-ingress
   namespace: drinkwater
+  annotations:
+    traefik.ingress.kubernetes.io/router.priority: "1"
+    traefik.ingress.kubernetes.io/router.middlewares: drinkwater-strip-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
     - host: localhost
       http:
         paths:
+          # API routes first (higher priority in Traefik)
           - path: /api/devices
             pathType: Prefix
             backend:
@@ -37,17 +41,25 @@ spec:
                 name: device-service
                 port:
                   number: 8081
+          # Frontend at root path LAST (catch-all)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 8080
 ---
-# Alternative: Single LoadBalancer service on port 80 with path-based routing (if Ingress not available)
+# Alternative: Direct LoadBalancer for frontend if Ingress has issues
 apiVersion: v1
 kind: Service
 metadata:
-  name: drinkwater-gateway
+  name: frontend-lb
   namespace: drinkwater
 spec:
   type: LoadBalancer
   selector:
-    app: device-service  # This won't work for multiple services, need Ingress or proxy
+    app: frontend
   ports:
     - port: 80
-      targetPort: 8081
+      targetPort: 8080

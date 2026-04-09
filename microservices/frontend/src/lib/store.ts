@@ -19,6 +19,7 @@ interface AppState {
   // Notifications
   toast: { message: string; type: 'success' | 'error' | 'info' } | null;
   setToast: (toast: { message: string; type: 'success' | 'error' | 'info' } | null) => void;
+  clearToast: () => void;
   
   // Recently viewed devices
   recentDevices: Device[];
@@ -41,6 +42,7 @@ export const useAppStore = create<AppState>()(
       
       toast: null,
       setToast: (toast) => set({ toast }),
+      clearToast: () => set({ toast: null }),
       
       recentDevices: [],
       addRecentDevice: (device) => {

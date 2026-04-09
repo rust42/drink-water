@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: monitoring
+data:
+  grafana.ini: |
+    [paths]
+    data = /var/lib/grafana/data
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+
+    [server]
+    http_port = 3000
+    root_url = %(protocol)s://%(domain)s:%(http_port)s/
+
+    [analytics]
+    reporting_enabled = false
+    check_for_updates = false
+
+    [users]
+    default_theme = light
+
+    [security]
+    admin_user = admin
+    admin_password = admin
+
+    [auth]
+    disable_login_form = false
+
+    [auth.anonymous]
+    enabled = true
+    org_role = Viewer
+
+    [log]
+    mode = console
+    level = info
+
+    [unified_alerting]
+    enabled = false
+
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki:3100
+        isDefault: true
+        jsonData:
+          timeout: 60
+          maxLines: 1000
+          httpHeaderName1: X-Scope-OrgID
+        secureJsonData:
+          httpHeaderValue1: "1"
+        editable: true
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        editable: true
+        isDefault: false
+
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /etc/grafana/dashboards
+
+  dashboard.json: |
+    {
+      "id": null,
+      "title": "Drink Water - Device Monitoring",
+      "tags": ["devices", "monitoring"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "refresh": "30s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Device Service Logs",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "{app=\"device-service\"}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Push Service Logs",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "{app=\"push-service\"}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+        },
+        {
+          "id": 3,
+          "title": "Water Service Logs",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "{app=\"water-service\"}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+        },
+        {
+          "id": 4,
+          "title": "Frontend Logs",
+          "type": "logs",
+          "targets": [
+            {
+              "expr": "{app=\"frontend\"}",
+              "refId": "A"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24}
+        }
+      ]
+    }

@@ -8,6 +8,9 @@ import type {
   WaterIntakeRequest,
   WaterIntakeResponse,
   DailyGoalResponse,
+  P8UploadResponse,
+  DynamicPushNotificationRequest,
+  DynamicPushNotificationResult,
 } from '@/types';
 
 class ApiError extends Error {
@@ -37,7 +40,10 @@ const handleError = (error: AxiosError): never => {
 };
 
 const createClient = (): AxiosInstance => {
+  // Use relative URLs to ensure API calls go to the same host/port as the frontend
+  const baseURL = '';
   const client = axios.create({
+    baseURL,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -57,6 +63,11 @@ const client = createClient();
 export const deviceApi = {
   register: async (request: DeviceRegistrationRequest): Promise<Device> => {
     const { data } = await client.post<Device>('/api/devices/register', request);
+    return data;
+  },
+
+  getAll: async (): Promise<Device[]> => {
+    const { data } = await client.get<Device[]>('/api/devices');
     return data;
   },
 
@@ -114,6 +125,40 @@ export const pushApi = {
   ): Promise<PushNotificationResult> => {
     const { data } = await client.post<PushNotificationResult>(
       `/api/push-notifications/send/hydration-reminder/${deviceIdentifier}`
+    );
+    return data;
+  },
+
+  uploadP8File: async (
+    file: File,
+    keyId: string,
+    teamId: string,
+    bundleId: string
+  ): Promise<P8UploadResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('keyId', keyId);
+    formData.append('teamId', teamId);
+    formData.append('bundleId', bundleId);
+
+    const { data } = await client.post<P8UploadResponse>(
+      '/api/push-notifications/upload-p8',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return data;
+  },
+
+  sendDynamicPush: async (
+    request: DynamicPushNotificationRequest
+  ): Promise<DynamicPushNotificationResult> => {
+    const { data } = await client.post<DynamicPushNotificationResult>(
+      '/api/push-notifications/send-dynamic',
+      request
     );
     return data;
   },

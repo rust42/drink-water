@@ -96,5 +96,6 @@ project(":push-service") {
 project(":water-service") {
     dependencies {
         add("implementation", project(":shared"))
+        add("implementation", "org.springframework.cloud:spring-cloud-starter-openfeign")
     }
 }

@@ -1,5 +1,8 @@
 # Multi-stage build for frontend
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
+
+# Build arguments for environment variables
+ARG VITE_API_BASE_URL
 
 WORKDIR /app
 
@@ -7,12 +10,12 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (env vars are baked in at build time)
 RUN npm run build
 
 # Production stage with nginx
@@ -35,7 +38,8 @@ RUN chown -R drinkwater:drinkwater /usr/share/nginx/html && \
 
 # Update nginx to run as non-root
 RUN sed -i 's/user  nginx/user  drinkwater/g' /etc/nginx/nginx.conf && \
-    sed -i 's/pid        \/var\/run\/nginx.pid/pid        \/tmp\/nginx.pid/g' /etc/nginx/nginx.conf
+    sed -i 's|pid .*|pid /tmp/nginx.pid;|g' /etc/nginx/nginx.conf && \
+    mkdir -p /tmp && chown drinkwater:drinkwater /tmp
 
 USER drinkwater
 

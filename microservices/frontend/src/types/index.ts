@@ -74,3 +74,26 @@ export interface DailyGoalResponse {
 
 export type NotificationMode = 'basic' | 'advanced';
 export type NotificationTarget = 'device' | 'store' | 'bulk';
+
+export interface P8UploadResponse {
+  success: boolean;
+  message: string;
+  keyId?: string;
+  teamId?: string;
+  bundleId?: string;
+}
+
+export interface DynamicPushNotificationRequest {
+  p8KeyId: string;
+  teamId: string;
+  bundleId: string;
+  deviceTokens: string[];
+  notification: PushNotificationRequest;
+  isProduction?: boolean;
+}
+
+export interface DynamicPushNotificationResult {
+  success: boolean;
+  message: string;
+  results?: PushNotificationResult[];
+}

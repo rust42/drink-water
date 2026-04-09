@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
         - name: device-service
-          image: drinkwater/device-service:1.0.1
-          imagePullPolicy: Never
+          image: drinkwater/device-service:1.0.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
               name: http

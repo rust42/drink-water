@@ -15,7 +15,6 @@ import org.springframework.kafka.support.serializer.JsonSerializer
  */
 @Configuration
 class KafkaProducerConfig {
-
     @Value("\${spring.kafka.bootstrap-servers:localhost:9092}")
     private lateinit var bootstrapServers: String
 

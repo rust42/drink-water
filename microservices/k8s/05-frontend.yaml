@@ -20,8 +20,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: drinkwater/frontend:1.0.0
-          imagePullPolicy: Never
+          image: drinkwater/frontend:1.0.1
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
