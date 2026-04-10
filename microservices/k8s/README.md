@@ -97,15 +97,66 @@ pushService:
 | `00-namespace.yaml` | Creates the `drinkwater` namespace |
 | `01-configmap.yaml` | Common configuration (service URLs, APNS settings) |
 | `02-secrets.yaml` | APNS certificate password and token auth secrets |
-| `10-device-service.yaml` | Deployment and Service for device-service |
-| `20-push-service.yaml` | Deployment and Service for push-service |
-| `30-water-service.yaml` | Deployment and Service for water-service |
+| `04-docs-aggregator.yaml` | API documentation aggregator with Swagger UI |
+| `05-frontend.yaml` | React frontend application |
+| `10-device-service.yaml` | Device management service |
+| `20-push-service.yaml` | Push notification service |
+| `30-water-service.yaml` | Water intake tracking service |
+| `50-nginx-gateway.yaml` | NGINX reverse proxy and load balancer |
+
+## Image Sources: Local vs GitHub Actions (GHCR)
+
+This project supports two workflows for Docker images:
+
+### Workflow 1: Local Development (Local Images)
+
+Use locally-built images with `drinkwater/*` prefix:
+
+```bash
+# Build images locally
+docker build -t drinkwater/device-service:1.0.1 -f device-service/Dockerfile .
+docker build -t drinkwater/push-service:1.0.3 -f push-service/Dockerfile .
+docker build -t drinkwater/water-service:1.0.2 -f water-service/Dockerfile .
+docker build -t drinkwater/frontend:1.0.2 -f frontend/Dockerfile ./frontend
+docker build -t drinkwater/docs-aggregator:1.0.0 -f docs-aggregator/Dockerfile ./docs-aggregator
+
+# Deploy using individual manifests (uses local images)
+kubectl apply -f k8s/00-namespace.yaml -f k8s/01-configmap.yaml -f k8s/02-secrets.yaml
+kubectl apply -f k8s/04-docs-aggregator.yaml -f k8s/05-frontend.yaml
+kubectl apply -f k8s/10-device-service.yaml -f k8s/20-push-service.yaml -f k8s/30-water-service.yaml
+kubectl apply -f k8s/50-nginx-gateway.yaml
+```
+
+### Workflow 2: CI/CD (GitHub Container Registry)
+
+GitHub Actions builds and pushes images to GHCR. The workflow updates manifests to use `ghcr.io/*` images:
+
+```yaml
+# GitHub Actions automatically updates manifests:
+# drinkwater/device-service:1.0.1 → ghcr.io/rust42/device-service:sha-abc123
+```
+
+**Using GHCR images locally:**
+
+1. Download artifacts from GitHub Actions workflow
+2. Apply the updated manifests:
+   ```bash
+   kubectl apply -f k8s/
+   ```
+
+Or use `kustomize` with overlays for environment-specific configurations.
+
+### Image Pull Policy
+
+All services use `imagePullPolicy: IfNotPresent` for compatibility with both workflows:
+- **Local images**: Uses cached local image if available
+- **GHCR images**: Pulls from registry if not cached locally
 
 ## Prerequisites
 
 1. Kubernetes cluster (v1.24+)
 2. kubectl configured
-3. Docker images built and available
+3. Docker images built locally OR pulled from GHCR
 
 ## Quick Start
 
@@ -174,9 +225,11 @@ All APIs exposed on single port **30080** with path-based routing:
 kubectl apply -f k8s/50-nginx-gateway.yaml
 
 # Access all services on localhost:30080
-# Device Service:   http://localhost:30080/api/devices/*
-# Push Service:     http://localhost:30080/api/push-notifications/*
-# Water Service:    http://localhost:30080/api/water/*
+# Device Service:    http://localhost:30080/api/devices/*
+# Push Service:      http://localhost:30080/api/push-notifications/*
+# Water Service:     http://localhost:30080/api/water/*
+# API Documentation: http://localhost:30080/api-docs/
+# Frontend:          http://localhost:30080/
 
 # Test examples:
 curl http://localhost:30080/api/devices/register \
@@ -194,9 +247,11 @@ curl http://localhost:30080/api/water/reminder/test
 
 ```bash
 # Port forward each service to different localhost ports
-kubectl port-forward service/device-service 8081:8081 -n drinkwater &
-kubectl port-forward service/push-service 8082:8082 -n drinkwater &
-kubectl port-forward service/water-service 8083:8083 -n drinkwater &
+kubectl port-forward service/device-service 8081:8080 -n drinkwater &
+kubectl port-forward service/push-service 8082:8080 -n drinkwater &
+kubectl port-forward service/water-service 8083:8080 -n drinkwater &
+kubectl port-forward service/docs-aggregator 8085:8080 -n drinkwater &
+kubectl port-forward service/frontend 8080:8080 -n drinkwater &
 ```
 
 #### Option C: Cloud Deployment with LoadBalancer

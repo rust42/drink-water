@@ -1,5 +1,6 @@
 package com.example.drinkwater.entity
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -38,6 +39,7 @@ class Device {
     var updatedAt: LocalDateTime = LocalDateTime.now()
 
     @Column(name = "is_active", nullable = false)
+    @JsonProperty("isActive")
     var isActive: Boolean = true
 
     constructor()

@@ -7,20 +7,26 @@ resources:
   - 00-namespace.yaml
   - 01-configmap.yaml
   - 02-secrets.yaml
+  - 04-docs-aggregator.yaml
+  - 05-frontend.yaml
   - 10-device-service.yaml
   - 20-push-service.yaml
   - 30-water-service.yaml
-  - 05-frontend.yaml
-  - 40-ingress.yaml
+  - 50-nginx-gateway.yaml
 
+# Images managed by Kustomize
+# For GitHub Actions (GHCR), the workflow updates these tags
+# For local development, use local images with: kubectl apply -k k8s/ --kustomize
 images:
   - name: drinkwater/frontend
-    newTag: 1.0.0
+    newTag: 1.0.2
   - name: drinkwater/device-service
-    newTag: 1.0.0
+    newTag: 1.0.1
   - name: drinkwater/push-service
-    newTag: 1.0.0
+    newTag: 1.0.3
   - name: drinkwater/water-service
+    newTag: 1.0.2
+  - name: drinkwater/docs-aggregator
     newTag: 1.0.0
 
 commonLabels:

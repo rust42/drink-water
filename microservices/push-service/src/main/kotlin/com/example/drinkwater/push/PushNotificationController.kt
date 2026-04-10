@@ -7,6 +7,13 @@ import com.example.drinkwater.push.dto.P8UploadResponse
 import com.example.drinkwater.push.dto.PushNotificationRequest
 import com.example.drinkwater.push.service.DynamicPushService
 import com.example.drinkwater.push.service.PushNotificationService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -18,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 @RestController
 @RequestMapping("/api/push-notifications")
+@Tag(name = "Push Notifications", description = "API for sending push notifications to iOS devices via APNS")
 class PushNotificationController(
     private val pushNotificationService: PushNotificationService,
     private val dynamicPushService: DynamicPushService? = null,
@@ -27,8 +35,18 @@ class PushNotificationController(
     // Temporary storage for uploaded p8 keys (key = "teamId:keyId", value = p8 content)
     private val p8KeyStorage = ConcurrentHashMap<String, String>()
 
+    @Operation(
+        summary = "Send push notification to a device",
+        description = "Sends an Apple Push Notification to a specific device using its identifier"
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Push notification sent successfully"),
+        ApiResponse(responseCode = "404", description = "Device not found"),
+        ApiResponse(responseCode = "500", description = "Internal server error")
+    ])
     @PostMapping("/send/{deviceIdentifier}")
     fun sendPushToDevice(
+        @Parameter(description = "Device identifier", required = true)
         @PathVariable deviceIdentifier: String,
         @Valid @RequestBody notification: PushNotificationRequest,
         httpRequest: HttpServletRequest
@@ -133,11 +151,24 @@ class PushNotificationController(
         }
     }
 
+    @Operation(
+        summary = "Upload APNS P8 authentication key",
+        description = "Uploads the Apple Push Notification Service authentication key (.p8 file) for dynamic push notifications"
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "P8 key uploaded successfully"),
+        ApiResponse(responseCode = "400", description = "Invalid file or missing parameters"),
+        ApiResponse(responseCode = "500", description = "Internal server error")
+    ])
     @PostMapping("/upload-p8")
     fun uploadP8File(
+        @Parameter(description = "P8 authentication key file", required = true)
         @RequestParam("file") file: MultipartFile,
+        @Parameter(description = "APNS Key ID", required = true)
         @RequestParam("keyId") keyId: String,
+        @Parameter(description = "Apple Team ID", required = true)
         @RequestParam("teamId") teamId: String,
+        @Parameter(description = "App Bundle ID", required = true)
         @RequestParam("bundleId") bundleId: String,
         httpRequest: HttpServletRequest,
     ): ResponseEntity<P8UploadResponse> {
@@ -190,6 +221,16 @@ class PushNotificationController(
         }
     }
 
+    @Operation(
+        summary = "Send dynamic push notification",
+        description = "Sends push notifications using uploaded P8 credentials directly (bypasses device service lookup)"
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Push notification sent successfully"),
+        ApiResponse(responseCode = "400", description = "Invalid request or P8 key not found"),
+        ApiResponse(responseCode = "503", description = "Dynamic push service not available"),
+        ApiResponse(responseCode = "500", description = "Internal server error")
+    ])
     @PostMapping("/send-dynamic")
     fun sendDynamicPush(
         @Valid @RequestBody request: DynamicPushRequest,

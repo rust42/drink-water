@@ -7,7 +7,7 @@ A microservices-based architecture for the Drink Water application with separate
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Eureka Server │    │  Device Service │    │  Push Service   │
-│   (Port: 8761) │    │   (Port: 8081) │    │   (Port: 8082) │
+│   (Port: 8761) │    │   (Port: 8080) │    │   (Port: 8080) │
 │                 │    │                 │    │                 │
 │                 │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
@@ -16,7 +16,7 @@ A microservices-based architecture for the Drink Water application with separate
                                  │
                     ┌─────────────────┐
                     │ Water Service  │
-                    │ (Port: 8083) │
+                    │ (Port: 8080) │
                     └─────────────────┘
 ```
 
@@ -29,7 +29,7 @@ A microservices-based architecture for the Drink Water application with separate
 - **Health**: http://localhost:8761/actuator/health
 
 ### 2. **Device Service** (Device Management)
-- **Port**: 8081
+- **Port**: 8080
 - **Purpose**: iOS device registration and management
 - **Database**: In-memory H2
 - **Endpoints**:
@@ -39,7 +39,7 @@ A microservices-based architecture for the Drink Water application with separate
   - `PUT /api/devices/{deviceIdentifier}/deactivate` - Deactivate device
 
 ### 3. **Push Service** (Push Notifications)
-- **Port**: 8082
+- **Port**: 8080
 - **Purpose**: Send push notifications to iOS devices
 - **Features**:
   - HTTP/2 support for APNS
@@ -52,7 +52,7 @@ A microservices-based architecture for the Drink Water application with separate
   - `POST /api/push-notifications/send/hydration-reminder/{deviceIdentifier}` - Hydration reminder
 
 ### 4. **Water Service** (Water Intake Tracking)
-- **Port**: 8083
+- **Port**: 8080
 - **Purpose**: Track water intake and goals
 - **Database**: In-memory H2
 - **Features**:

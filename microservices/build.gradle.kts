@@ -59,6 +59,7 @@ subprojects {
         add("implementation", "org.springframework.cloud:spring-cloud-starter-openfeign")
         add("implementation", "org.jetbrains.kotlin:kotlin-reflect")
         add("implementation", "org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+        add("implementation", "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
         add("runtimeOnly", "com.h2database:h2")
         add("compileOnly", "org.projectlombok:lombok:1.18.38")
         add("annotationProcessor", "org.projectlombok:lombok:1.18.38")

@@ -1,5 +1,6 @@
 package com.example.drinkwater.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
 data class DeviceRegistrationResponse(
@@ -13,6 +14,9 @@ data class DeviceRegistrationResponse(
     val appVersion: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
+
+    @JsonProperty("isActive")
     val isActive: Boolean,
+
     val message: String,
 )

@@ -1,70 +1,68 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: device-service
+  name: docs-aggregator
   namespace: drinkwater
   labels:
-    app: device-service
-    app.kubernetes.io/name: device-service
+    app: docs-aggregator
+    app.kubernetes.io/name: docs-aggregator
     app.kubernetes.io/version: "1.0.0"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: device-service
+      app: docs-aggregator
   template:
     metadata:
       labels:
-        app: device-service
-        app.kubernetes.io/name: device-service
+        app: docs-aggregator
+        app.kubernetes.io/name: docs-aggregator
     spec:
       containers:
-        - name: device-service
-          image: drinkwater/device-service:1.0.1
+        - name: docs-aggregator
+          image: drinkwater/docs-aggregator:1.0.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
               name: http
           env:
-            - name: SERVER_PORT
+            - name: PORT
               value: "8080"
-            - name: SPRING_DATASOURCE_URL
+            - name: DEVICE_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
                   name: drinkwater-config
-                  key: DEVICE_DB_URL
-            - name: SPRING_PROFILES_ACTIVE
+                  key: DEVICE_SERVICE_URL
+            - name: PUSH_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
                   name: drinkwater-config
-                  key: SPRING_PROFILES_ACTIVE
-            - name: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
+                  key: PUSH_SERVICE_URL
+            - name: WATER_SERVICE_URL
               valueFrom:
                 configMapKeyRef:
                   name: drinkwater-config
-                  key: LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              value: "kafka-broker:9092"
+                  key: WATER_SERVICE_URL
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: "64Mi"
+              cpu: "100m"
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: "128Mi"
+              cpu: "250m"
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /health
               port: 8080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 10
             periodSeconds: 30
             timeoutSeconds: 3
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /health
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
@@ -72,15 +70,33 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: device-service
+  name: docs-aggregator
   namespace: drinkwater
   labels:
-    app: device-service
+    app: docs-aggregator
 spec:
   selector:
-    app: device-service
+    app: docs-aggregator
   ports:
     - port: 8080
       targetPort: 8080
       name: http
   type: ClusterIP
+---
+# NodePort service for direct access
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-aggregator-nodeport
+  namespace: drinkwater
+  labels:
+    app: docs-aggregator
+spec:
+  selector:
+    app: docs-aggregator
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30085
+      name: http
+  type: NodePort

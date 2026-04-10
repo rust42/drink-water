@@ -5,9 +5,9 @@ metadata:
   namespace: drinkwater
 data:
   # Service URLs for inter-service communication
-  DEVICE_SERVICE_URL: "http://device-service:8081"
-  PUSH_SERVICE_URL: "http://push-service:8082"
-  WATER_SERVICE_URL: "http://water-service:8083"
+  DEVICE_SERVICE_URL: "http://device-service:8080"
+  PUSH_SERVICE_URL: "http://push-service:8080"
+  WATER_SERVICE_URL: "http://water-service:8080"
   
   # Common Spring settings
   SPRING_PROFILES_ACTIVE: "kubernetes"

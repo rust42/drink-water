@@ -47,10 +47,10 @@ services:
     image: drinkwater/device-service:1.0.0
     container_name: device-service
     ports:
-      - "8081:8081"
+      - "8081:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8081
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:device-db;DB_CLOSE_DELAY=-1
       - SPRING_H2_CONSOLE_ENABLED=true
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -61,7 +61,7 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -74,12 +74,12 @@ services:
     image: drinkwater/push-service:1.0.0
     container_name: push-service
     ports:
-      - "8082:8082"
+      - "8082:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8082
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:push-db;DB_CLOSE_DELAY=-1
-      - DEVICE_SERVICE_URL=http://device-service:8081
+      - DEVICE_SERVICE_URL=http://device-service:8080
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - PUSH_APNS_TOPIC=com.sk.drink-water
       - PUSH_APNS_CERT_PATH=/app/certs/PushNotification.p12
@@ -97,7 +97,7 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -110,13 +110,13 @@ services:
     image: drinkwater/water-service:1.0.0
     container_name: water-service
     ports:
-      - "8083:8083"
+      - "8083:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_PORT=8083
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:water-db;DB_CLOSE_DELAY=-1
-      - DEVICE_SERVICE_URL=http://device-service:8081
-      - PUSH_SERVICE_URL=http://push-service:8082
+      - DEVICE_SERVICE_URL=http://device-service:8080
+      - PUSH_SERVICE_URL=http://push-service:8080
       - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER=INFO
     networks:
@@ -129,11 +129,40 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 60s
+
+  docs-aggregator:
+    build:
+      context: ./docs-aggregator
+      dockerfile: Dockerfile
+    image: drinkwater/docs-aggregator:1.0.0
+    container_name: docs-aggregator
+    ports:
+      - "8085:8080"
+    environment:
+      - PORT=8080
+      - DEVICE_SERVICE_URL=http://device-service:8080
+      - PUSH_SERVICE_URL=http://push-service:8080
+      - WATER_SERVICE_URL=http://water-service:8080
+    networks:
+      - drinkwater-network
+    depends_on:
+      device-service:
+        condition: service_healthy
+      push-service:
+        condition: service_healthy
+      water-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
 networks:
   drinkwater-network:

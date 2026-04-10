@@ -68,17 +68,26 @@ export const deviceApi = {
 
   getAll: async (): Promise<Device[]> => {
     const { data } = await client.get<Device[]>('/api/devices');
-    return data;
+    return data.map(device => ({
+      ...device,
+      isActive: device.isActive ?? device.active ?? false
+    }));
   },
 
   getByIdentifier: async (deviceIdentifier: string): Promise<Device> => {
     const { data } = await client.get<Device>(`/api/devices/${deviceIdentifier}`);
-    return data;
+    return {
+      ...data,
+      isActive: data.isActive ?? data.active ?? false
+    };
   },
 
   getByStore: async (storeId: string): Promise<Device[]> => {
     const { data } = await client.get<Device[]>(`/api/devices/store/${storeId}`);
-    return data;
+    return data.map(device => ({
+      ...device,
+      isActive: device.isActive ?? device.active ?? false
+    }));
   },
 
   deactivate: async (deviceIdentifier: string): Promise<void> => {

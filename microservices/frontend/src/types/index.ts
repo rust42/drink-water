@@ -10,6 +10,7 @@ export interface Device {
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
+  active?: boolean; // Backend compatibility field
   message?: string;
 }
 
