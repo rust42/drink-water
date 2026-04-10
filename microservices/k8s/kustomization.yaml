@@ -18,16 +18,16 @@ resources:
 # For GitHub Actions (GHCR), the workflow updates these tags
 # For local development, use local images with: kubectl apply -k k8s/ --kustomize
 images:
-  - name: drinkwater/frontend
-    newTag: 1.0.2
-  - name: drinkwater/device-service
-    newTag: 1.0.1
-  - name: drinkwater/push-service
-    newTag: 1.0.3
-  - name: drinkwater/water-service
-    newTag: 1.0.2
-  - name: drinkwater/docs-aggregator
-    newTag: 1.0.0
+  - name: frontend
+    newTag: 1.2.1
+  - name: device-service
+    newTag: latest
+  - name: push-service
+    newTag: latest
+  - name: water-service
+    newTag: latest
+  - name: docs-aggregator
+    newTag: latest
 
 commonLabels:
   app.kubernetes.io/managed-by: github-actions
