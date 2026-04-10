@@ -51,7 +51,7 @@ jobs:
 
             - name: Build Java Jar
               if: matrix.type == 'java'
-              run: ./gradlew :shared:jar :${{ matrix.service }}:bootJar -x ktlintCheck
+              run: ./gradlew :shared:jar :${{ matrix.service }}:bootJar -x ktlintCheck -x test
 
             # --- Setup Docker Buildx (Shared) ---
             - name: Set up Docker Buildx

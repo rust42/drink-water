@@ -1,21 +1,13 @@
-# Multi-stage build for docs-aggregator
-FROM node:20-alpine AS builder
+# Single-stage build for docs-aggregator (better for multi-platform)
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --only=production
-
-# Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Copy dependencies from builder
-COPY --from=builder /app/node_modules ./node_modules
+# Install dependencies with platform-specific optimizations
+RUN npm install --only=production --no-optional && npm cache clean --force
 
 # Copy application code
 COPY server.js ./
