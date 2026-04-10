@@ -39,6 +39,8 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0  # Full history for better caching
 
             # --- Setup Java only for Gradle services ---
             - name: Set up JDK 21
@@ -49,9 +51,40 @@ jobs:
                   distribution: 'temurin'
                   cache: 'gradle'
 
-            - name: Build Java Jar
+            # --- Enhanced Gradle Caching ---
+            - name: Cache Gradle packages
               if: matrix.type == 'java'
-              run: ./gradlew :shared:jar :${{ matrix.service }}:bootJar -x ktlintCheck -x test
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ~/.gradle/caches
+                      ~/.gradle/wrapper
+                      build
+                  key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+                  restore-keys: |
+                      ${{ runner.os }}-gradle-
+
+            - name: Cache Maven packages
+              if: matrix.type == 'java'
+              uses: actions/cache@v3
+              with:
+                  path: ~/.m2/repository
+                  key: ${{ runner.os }}-maven-${{ hashFiles('**/build.gradle*') }}
+                  restore-keys: |
+                      ${{ runner.os }}-maven-
+
+            - name: Build Java Jar with Parallel Compilation
+              if: matrix.type == 'java'
+              run: |
+                  # Configure Gradle for maximum performance
+                  ./gradlew :shared:jar :${{ matrix.service }}:bootJar \
+                    -x ktlintCheck \
+                    -x test \
+                    --parallel \
+                    --max-workers=4 \
+                    --no-daemon \
+                    --build-cache \
+                    --configuration-cache
 
             # --- Setup Docker Buildx (Shared) ---
             - name: Set up Docker Buildx

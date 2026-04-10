@@ -1,0 +1,57 @@
+name: Gradle Build Cache Warmer
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run daily at 2 AM UTC to warm up caches
+    - cron: '0 2 * * *'
+  workflow_call:
+
+jobs:
+  warm-gradle-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/build.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Warm up Gradle build cache
+        run: |
+          echo "Warming up Gradle build cache..."
+          ./gradlew :shared:compileKotlin \
+                   :device-service:compileKotlin \
+                   :water-service:compileKotlin \
+                   :push-service:compileKotlin \
+                   --parallel \
+                   --max-workers=4 \
+                   --no-daemon \
+                   --build-cache \
+                   --configuration-cache
+          echo "Gradle cache warmed up successfully!"
