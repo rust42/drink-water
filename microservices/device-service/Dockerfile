@@ -1,21 +1,5 @@
-# Multi-stage build for device-service
-# Use Ubuntu JDK for builder (Alpine has JVM compatibility issues with Gradle)
-FROM eclipse-temurin:21-jdk AS builder
-
-WORKDIR /app
-
-# Copy gradle files
-COPY gradle gradle
-COPY gradlew gradlew.bat build.gradle.kts settings.gradle.kts gradle.properties ./
-
-# Copy source code
-COPY shared shared
-COPY device-service device-service
-
-# Build the application
-RUN ./gradlew :device-service:bootJar --no-daemon -x test
-
-# Runtime stage - Use Alpine JRE for smaller image (~60MB vs ~200MB)
+# Runtime-only image — JAR is pre-built by CI (Gradle runs on the host, not inside Docker)
+# This avoids Gradle wrapper download failures in QEMU-emulated multi-arch builds
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
@@ -26,8 +10,8 @@ RUN addgroup -S drinkwater && adduser -S drinkwater -G drinkwater
 # Install wget for healthcheck
 RUN apk add --no-cache wget
 
-# Copy jar from builder
-COPY --from=builder /app/device-service/build/libs/*.jar app.jar
+# Copy pre-built jar from CI (context: ./microservices)
+COPY device-service/build/libs/*.jar app.jar
 
 # Change ownership
 RUN chown -R drinkwater:drinkwater /app
