@@ -14,19 +14,24 @@ resources:
   - 30-water-service.yaml
   - 50-nginx-gateway.yaml
 
-# Images managed by Kustomize
-# For GitHub Actions (GHCR), the workflow updates these tags
-# For local development, use local images with: kubectl apply -k k8s/ --kustomize
+# Image overrides — maps local placeholder names to GHCR images.
+# CI (verify-manifests job) updates individual YAML files via sed.
+# This section enables `kubectl apply -k k8s/` for local dev pointing at latest GHCR images.
 images:
-  - name: frontend
-    newTag: 1.2.1
-  - name: device-service
+  - name: drinkwater/frontend
+    newName: ghcr.io/rust42/frontend
     newTag: latest
-  - name: push-service
+  - name: drinkwater/device-service
+    newName: ghcr.io/rust42/device-service
     newTag: latest
-  - name: water-service
+  - name: drinkwater/push-service
+    newName: ghcr.io/rust42/push-service
     newTag: latest
-  - name: docs-aggregator
+  - name: drinkwater/water-service
+    newName: ghcr.io/rust42/water-service
+    newTag: latest
+  - name: drinkwater/docs-aggregator
+    newName: ghcr.io/rust42/docs-aggregator
     newTag: latest
 
 commonLabels:

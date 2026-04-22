@@ -19,28 +19,28 @@ spec:
               service:
                 name: device-service
                 port:
-                  number: 8081
+                  number: 8080
           - path: /api/push-notifications
             pathType: Prefix
             backend:
               service:
                 name: push-service
                 port:
-                  number: 8082
+                  number: 8080
           - path: /api/water
             pathType: Prefix
             backend:
               service:
                 name: water-service
                 port:
-                  number: 8083
+                  number: 8080
           - path: /actuator/health
             pathType: Prefix
             backend:
               service:
                 name: device-service
                 port:
-                  number: 8081
+                  number: 8080
           # Frontend at root path LAST (catch-all)
           - path: /
             pathType: Prefix

@@ -4,21 +4,22 @@ metadata:
   name: drinkwater-config
   namespace: drinkwater
 data:
-  # Service URLs for inter-service communication
+  # Service URLs for inter-service communication (all services listen on 8080)
   DEVICE_SERVICE_URL: "http://device-service:8080"
   PUSH_SERVICE_URL: "http://push-service:8080"
   WATER_SERVICE_URL: "http://water-service:8080"
-  
-  # Common Spring settings
+
+  # Spring settings
   SPRING_PROFILES_ACTIVE: "kubernetes"
   LOGGING_LEVEL_COM_EXAMPLE_DRINKWATER: "INFO"
-  
-  # APNS Configuration
-  PUSH_APNS_TOPIC: "com.sk.drink-water"
-  PUSH_APNS_SANDBOX_ENABLED: "true"
-  PUSH_APNS_TOKEN_ENABLED: "false"
-  
+
   # Database URLs
   DEVICE_DB_URL: "jdbc:h2:mem:device-db;DB_CLOSE_DELAY=-1"
   PUSH_DB_URL: "jdbc:h2:mem:push-db;DB_CLOSE_DELAY=-1"
   WATER_DB_URL: "jdbc:h2:mem:water-db;DB_CLOSE_DELAY=-1"
+
+  # APNS Configuration
+  PUSH_APNS_TOPIC: "com.sk.drink-water"
+  PUSH_APNS_SANDBOX_ENABLED: "true"
+  PUSH_APNS_TOKEN_ENABLED: "false"
+  PUSH_APNS_TOKEN_P8_PATH: "/app/certs/AuthKey_C8Y2JTN2UQ.p8"
