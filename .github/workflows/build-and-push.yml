@@ -67,7 +67,7 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix=,suffix=,format=short
+          type=sha,prefix=sha-,format=short
           latest
 
     - name: Build and push Docker image
@@ -110,7 +110,7 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix=,suffix=,format=short
+          type=sha,prefix=sha-,format=short
           latest
 
     - name: Build and push Docker image
@@ -121,6 +121,7 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        platforms: linux/amd64,linux/arm64
         build-args: |
           VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8083' }}
 
@@ -154,7 +155,7 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix=,suffix=,format=short
+          type=sha,prefix=sha-,format=short
           latest
 
     - name: Build and push Docker image
