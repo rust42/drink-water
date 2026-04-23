@@ -205,6 +205,19 @@ jobs:
                     --build-cache \
                     --configuration-cache
 
+            # Upload the fat JAR so the release job can attach it.
+            # Only on tag pushes — no point keeping artifacts for every main commit.
+            - name: Upload JAR artifact
+              if: matrix.type == 'java' && steps.guard.outputs.should_build == 'true' && startsWith(github.ref, 'refs/tags/')
+              uses: actions/upload-artifact@v4
+              with:
+                  name: jar-${{ matrix.service }}
+                  # bootJar produces <service>-<version>.jar; -plain.jar is the thin jar — skip it
+                  path: |
+                      ${{ matrix.service }}/build/libs/*.jar
+                      !${{ matrix.service }}/build/libs/*-plain.jar
+                  retention-days: 1
+
             # ── Docker: shared setup ──────────────────────────────────────────
             - name: Set up Docker Buildx
               if: steps.guard.outputs.should_build == 'true'
@@ -330,9 +343,101 @@ jobs:
                   kustomize build . > deployment.yaml
                   echo "Generated deployment.yaml with updated image tags"
 
+            # Upload the rendered manifest so the release job can attach it.
+            - name: Upload deployment manifest artifact
+              if: startsWith(github.ref, 'refs/tags/')
+              uses: actions/upload-artifact@v4
+              with:
+                  name: k8s-manifest
+                  path: k8s/deployment.yaml
+                  retention-days: 1
+
             - name: Commit and Push Updated Manifests
               working-directory: ./k8s
               run: |
                   git add deployment.yaml kustomization.yaml
                   git commit -m "ci: Update manifests with SHA-${{ github.sha }} image tags"
                   git push origin main || git push origin master
+
+    # ─── Job 5: Create GitHub Release (tag pushes only) ───────────────────────
+    # Downloads all JAR artifacts + the rendered k8s manifest, renames them with
+    # the version tag, and publishes a GitHub Release with an auto-generated
+    # changelog derived from commits since the previous tag.
+    release:
+        runs-on: ubuntu-latest
+        needs: [build-and-push, verify-manifests]
+        if: startsWith(github.ref, 'refs/tags/') && github.event_name == 'push'
+        permissions:
+            contents: write   # needed to create the release and upload assets
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0   # full history so changelog covers all commits
+
+            - name: Download all build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: release-assets
+
+            - name: Rename assets to include version tag
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  mkdir -p dist
+
+                  # Rename each JAR: jar-<service>/<service>-*.jar → <service>-<TAG>.jar
+                  for service in device-service water-service push-service; do
+                    JAR=$(ls release-assets/jar-${service}/*.jar 2>/dev/null | head -1)
+                    if [[ -n "$JAR" ]]; then
+                      cp "$JAR" "dist/${service}-${TAG}.jar"
+                      echo "📦 Packaged: ${service}-${TAG}.jar"
+                    fi
+                  done
+
+                  # Rename k8s manifest
+                  if [[ -f release-assets/k8s-manifest/deployment.yaml ]]; then
+                    cp release-assets/k8s-manifest/deployment.yaml "dist/k8s-deployment-${TAG}.yaml"
+                    echo "☸️  Packaged: k8s-deployment-${TAG}.yaml"
+                  fi
+
+                  echo "--- Release assets ---"
+                  ls -lh dist/
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  # GitHub auto-generates release notes from PRs and commits
+                  # since the previous tag — no manual changelog needed.
+                  generate_release_notes: true
+                  files: dist/*
+                  body: |
+                      ## 🐳 Docker Images
+
+                      All images are signed with Cosign and published to GHCR:
+
+                      ```bash
+                      docker pull ghcr.io/${{ github.repository_owner }}/device-service:${{ github.ref_name }}
+                      docker pull ghcr.io/${{ github.repository_owner }}/water-service:${{ github.ref_name }}
+                      docker pull ghcr.io/${{ github.repository_owner }}/push-service:${{ github.ref_name }}
+                      docker pull ghcr.io/${{ github.repository_owner }}/frontend:${{ github.ref_name }}
+                      docker pull ghcr.io/${{ github.repository_owner }}/docs-aggregator:${{ github.ref_name }}
+                      ```
+
+                      Verify any image signature:
+                      ```bash
+                      cosign verify ghcr.io/${{ github.repository_owner }}/water-service:${{ github.ref_name }}
+                      ```
+
+                      ## ☸️ Deploy to Kubernetes
+
+                      The rendered manifest with ${{ github.ref_name }} image tags is attached below.
+
+                      ```bash
+                      # Apply the full stack in one command
+                      kubectl apply -f k8s-deployment-${{ github.ref_name }}.yaml
+                      ```
+
+                      Or pull and deploy with Kustomize directly:
+                      ```bash
+                      kustomize build k8s/ | kubectl apply -f -
+                      ```
