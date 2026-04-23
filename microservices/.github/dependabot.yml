@@ -1,0 +1,104 @@
+version: 2
+updates:
+    # ── GitHub Actions ────────────────────────────────────────────────────────
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "ci"
+
+    # ── Docker base images ────────────────────────────────────────────────────
+    - package-ecosystem: "docker"
+      directory: "/frontend"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docker"
+
+    - package-ecosystem: "docker"
+      directory: "/docs-aggregator"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docker"
+
+    - package-ecosystem: "docker"
+      directory: "/device-service"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docker"
+
+    - package-ecosystem: "docker"
+      directory: "/water-service"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docker"
+
+    - package-ecosystem: "docker"
+      directory: "/push-service"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docker"
+
+    # ── npm (frontend) ────────────────────────────────────────────────────────
+    - package-ecosystem: "npm"
+      directory: "/frontend"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "frontend"
+      # Group all non-breaking updates into a single PR to reduce noise
+      groups:
+          frontend-minor-patch:
+              update-types:
+                  - "minor"
+                  - "patch"
+
+    # ── npm (docs-aggregator) ─────────────────────────────────────────────────
+    - package-ecosystem: "npm"
+      directory: "/docs-aggregator"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "docs-aggregator"
+
+    # ── Gradle (Java services) ────────────────────────────────────────────────
+    - package-ecosystem: "gradle"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      labels:
+          - "dependencies"
+          - "java"
+      # Group Spring Boot + Spring Cloud updates together (they version-lock)
+      groups:
+          spring-framework:
+              patterns:
+                  - "org.springframework*"
+                  - "org.springframework.boot*"
+                  - "org.springframework.cloud*"
+                  - "io.spring*"
+          kotlin:
+              patterns:
+                  - "org.jetbrains.kotlin*"

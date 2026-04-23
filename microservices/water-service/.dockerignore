@@ -1,0 +1,28 @@
+# Source and test files — the JAR is pre-built by Gradle before Docker runs
+src/
+build/classes/
+build/tmp/
+build/reports/
+build/generated/
+
+# Gradle internals
+.gradle/
+gradle/
+
+# IDE and editor
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Docs and CI
+*.md
+.github/
+
+# Misc
+*.log
