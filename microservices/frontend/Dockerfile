@@ -1,5 +1,8 @@
 # Multi-stage build for frontend
-FROM node:22-alpine AS builder
+# --platform=$BUILDPLATFORM pins the builder to the host's native platform (amd64 on GHA runners).
+# This avoids QEMU emulation for npm install/build, which crashes on arm64 with Node 22.
+# The final nginx stage is still multi-platform — only static assets are copied across.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 # Build arguments for environment variables
 ARG VITE_API_BASE_URL
